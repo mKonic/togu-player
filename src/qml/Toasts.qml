@@ -5,12 +5,12 @@ Column {
     id: t
     spacing: 8
     function show(text, tone) {
-        model.append({ msg: text, tone: tone || "purple" })
-        if (model.count > 3) model.remove(0)
+        toastModel.append({ msg: text, tone: tone || "purple" })
+        if (toastModel.count > 3) toastModel.remove(0)
     }
-    ListModel { id: model }
+    ListModel { id: toastModel }
     Repeater {
-        model: model
+        model: toastModel
         delegate: Rectangle {
             id: d
             anchors.horizontalCenter: parent.horizontalCenter
@@ -40,7 +40,7 @@ Column {
             }
             Timer {
                 interval: 3200; running: true
-                onTriggered: model.remove(index)
+                onTriggered: toastModel.remove(index)
             }
         }
     }

@@ -17,6 +17,7 @@
 #include <QFileInfo>
 #include <QImage>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QQmlEngine>
 #include <QtConcurrent>
 
@@ -305,6 +306,53 @@ void Library::setWatched(int itemId, bool watched)
 {
     db::exec(db::app(), QStringLiteral("UPDATE items SET watched=?, position=0 WHERE id=?"), {watched ? 1 : 0, itemId});
     bump();
+}
+
+void Library::exportCondensed(int seriesId, const QUrl &folder)
+{
+    const QString dir = folder.toLocalFile();
+    const QString format = Settings::v("audioFormat").toString() == u"opus" ? QStringLiteral("opus") : QStringLiteral("mp3");
+    QThreadPool::globalInstance()->start([this, seriesId, dir, format] {
+        struct Ep {
+            int id;
+            QString path, title;
+            double episode, offset;
+            int track;
+        };
+        QList<Ep> eps;
+        QString series;
+        {
+            QSqlQuery q(db::app());
+            q.prepare(QStringLiteral("SELECT i.id, i.path, i.title, COALESCE(i.episode,-1), COALESCE(i.sub_offset,0), COALESCE(i.audio_track,-1),"
+                                     " COALESCE(s.meta_title, s.title) FROM items i JOIN series s ON s.id=i.series WHERE i.series=?"
+                                     " ORDER BY i.season, i.episode, i.path"));
+            q.addBindValue(seriesId);
+            db::exec(q);
+            while (q.next()) {
+                eps.append({q.value(0).toInt(), q.value(1).toString(), q.value(2).toString(), q.value(3).toDouble(), q.value(4).toDouble(), q.value(5).toInt()});
+                series = q.value(6).toString();
+            }
+        }
+        static const QRegularExpression bad(QStringLiteral("[/\\\\:*?\"<>|]"));
+        series.replace(bad, QStringLiteral("_"));
+        int written = 0, skipped = 0, done = 0;
+        for (const Ep &e : eps) {
+            QList<std::pair<double, double>> spans;
+            QSqlQuery q(db::app());
+            q.prepare(QStringLiteral("SELECT start, end FROM lines WHERE item=? ORDER BY start"));
+            q.addBindValue(e.id);
+            db::exec(q);
+            while (q.next()) spans.append({q.value(0).toDouble() + e.offset, q.value(1).toDouble() + e.offset});
+            QString name = e.episode >= 0 ? QStringLiteral("%1 - %2").arg(series).arg(e.episode, 2, 'f', e.episode == int(e.episode) ? 0 : 1, QChar(u'0'))
+                                          : QFileInfo(e.path).completeBaseName();
+            name.replace(bad, QStringLiteral("_"));
+            const QString out = dir + u'/' + name + QStringLiteral(" (condensed).") + format;
+            if (spans.isEmpty() || media::condensedAudio(e.path, spans, e.track, format, out).isEmpty()) ++skipped;
+            else ++written;
+            QMetaObject::invokeMethod(this, [this, d = ++done, n = int(eps.size())] { emit condensedProgress(d, n); });
+        }
+        QMetaObject::invokeMethod(this, [this, dir, written, skipped] { emit condensedDone(dir, written, skipped); });
+    });
 }
 
 void Library::setSeriesWatched(int seriesId, bool watched)

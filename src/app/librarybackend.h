@@ -54,11 +54,16 @@ public:
     Q_INVOKABLE void applyMeta(int seriesId, const QVariantMap &candidate);
     Q_INVOKABLE void clearMeta(int seriesId);
     Q_INVOKABLE void refreshMeta(int seriesId);
+    // Condensed audio: each episode's dialogue (from its indexed subtitle lines) joined
+    // into one file per episode, written to `folder`.
+    Q_INVOKABLE void exportCondensed(int seriesId, const QUrl &folder);
 
 signals:
     void busyChanged();
     void changed();
     void metaResults(int seriesId, const QVariantList &results);
+    void condensedProgress(int done, int total);
+    void condensedDone(const QString &folder, int written, int skipped);
 
 private:
     explicit Library(QObject *parent = nullptr);

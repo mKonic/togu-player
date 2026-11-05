@@ -124,7 +124,7 @@ QString condensedAudio(const QString &path, const QList<std::pair<double, double
     script.write(QStringLiteral("aselect='%1',asetpts=N/SR/TB").arg(parts.join(u'+')).toUtf8());
     script.flush();
     QStringList args{"-i", path, "-map", audioTrack >= 0 ? QStringLiteral("0:a:%1").arg(audioTrack) : QStringLiteral("0:a:0"),
-                     "-vn", "-sn", "-filter_script:a", script.fileName()};
+                     "-vn", "-sn", "-/filter:a", script.fileName()};
     args << audioCodec(format) << outPath;
     return run(args, 600000) && QFileInfo(outPath).size() > 0 ? outPath : QString();
 }

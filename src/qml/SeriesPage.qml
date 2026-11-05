@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import Togu
 
 // One series: banner, description, comprehension, episodes.
@@ -87,6 +88,7 @@ Item {
                                     id: moreMenu
                                     MenuItem { text: qsTr("Mark all watched"); onTriggered: Library.setSeriesWatched(sp.seriesId, true) }
                                     MenuItem { text: qsTr("Mark all unwatched"); onTriggered: Library.setSeriesWatched(sp.seriesId, false) }
+                                    MenuItem { text: qsTr("Export condensed audio…"); onTriggered: condenseDir.open() }
                                     MenuItem { text: qsTr("Remove online info"); onTriggered: Library.clearMeta(sp.seriesId) }
                                     MenuItem { text: qsTr("Look up online again"); onTriggered: Library.refreshMeta(sp.seriesId) }
                                 }
@@ -171,4 +173,21 @@ Item {
     }
 
     MetaDialog { id: metaDialog; anchors.centerIn: parent }
+    FolderDialog {
+        id: condenseDir
+        title: qsTr("Save condensed audio to")
+        currentFolder: sp.eps.length ? Togu.fileUrl(sp.eps[0].path.substring(0, sp.eps[0].path.lastIndexOf("/"))) : ""
+        onAccepted: {
+            Library.exportCondensed(sp.seriesId, selectedFolder)
+            Togu.toast(qsTr("Making condensed audio…"), "blue")
+        }
+    }
+    Connections {
+        target: Library
+        function onCondensedDone(folder, written, skipped) {
+            if (written === 0) Togu.toast(qsTr("No episode has indexed Japanese subtitles to condense."), "pink")
+            else Togu.toast(skipped ? qsTr("Condensed %1 episodes, skipped %2 without subtitles.").arg(written).arg(skipped)
+                                    : qsTr("Condensed %1 episodes.").arg(written), "teal")
+        }
+    }
 }
