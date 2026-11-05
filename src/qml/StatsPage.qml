@@ -341,6 +341,7 @@ Item {
         }
         // One hover area over the bars and the tip, so the tip can't steal the hover.
         MouseArea {
+            z: 11   // above the tip (z 10)
             x: bc.axisW
             width: bc.plotW
             height: bc.height
@@ -445,6 +446,7 @@ Item {
             y: d ? Math.max(0, lc.yFor(d[field]) - height - 12) : 0
         }
         MouseArea {
+            z: 11   // above the tip (z 10)
             anchors.fill: parent
             hoverEnabled: lc.points.length >= 2
             onPositionChanged: mouse => {
