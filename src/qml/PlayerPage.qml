@@ -600,7 +600,7 @@ FocusScope {
         id: importDialog
         property bool secondary: false
         title: qsTr("Import subtitles")
-        nameFilters: [qsTr("Subtitles (*.ass *.ssa *.srt *.vtt *.lrc)"), qsTr("All files (*)")]
+        nameFilters: [qsTr("Subtitles (*.ass *.ssa *.srt *.vtt *.lrc *.zip *.rar *.7z)"), qsTr("All files (*)")]
         onAccepted: session.importSubtitle(selectedFile, secondary)
     }
 

@@ -86,7 +86,7 @@ ApplicationWindow {
         onDropped: drop => {
             if (!drop.hasUrls) return
             const p = Togu.localPath(drop.urls[0])
-            if (/\.(ass|ssa|srt|vtt|lrc)$/i.test(p) && player.visible) player.session.importSubtitle(drop.urls[0], false)
+            if (/\.(ass|ssa|srt|vtt|lrc|rar|7z|zip)$/i.test(p) && player.visible) player.session.importSubtitle(drop.urls[0], false)
             else if (/\.zip$/i.test(p)) Togu.importDicts(drop.urls)
             else win.playFile(p, 0)
         }

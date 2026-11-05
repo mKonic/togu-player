@@ -2,6 +2,7 @@
 
 #include "backend.h"
 #include "core/library/names.h"
+#include "core/util/arc.h"
 #include "core/util/db.h"
 #include "core/words/stats.h"
 #include "core/words/words.h"
@@ -624,8 +625,35 @@ void PlaybackSession::updateStats()
 
 void PlaybackSession::importSubtitle(const QUrl &file, bool secondary)
 {
-    const QString p = file.isLocalFile() ? file.toLocalFile() : file.toString();
+    QString p = file.isLocalFile() ? file.toLocalFile() : file.toString();
     if (!QFileInfo::exists(p)) return;
+    if (!names::isSubtitle(p)) {
+        // An archive of subtitles: keep them all, take the one for this episode.
+        const double ep = names::parse(m_path).episode;
+        const QString dir = db::dataDir() + QStringLiteral("/subtitles/") + QFileInfo(p).completeBaseName();
+        QDir().mkpath(dir);
+        QString best;
+        int bestScore = -1;
+        arc::each(p, [](const QString &n) { return names::isSubtitle(n); }, [&](const QString &n, const QByteArray &bytes) {
+            const QString out = dir + u'/' + QFileInfo(n).fileName();
+            QFile f(out);
+            if (f.open(QIODevice::WriteOnly)) f.write(bytes);
+            int score = 0;
+            if (ep >= 0 && names::parse(QFileInfo(n).fileName()).episode == ep) score += 10;
+            const names::Lang lang = names::subtitleLang(n);
+            if ((lang == names::Lang::Japanese) != secondary) score += 3;
+            if (score > bestScore) {
+                bestScore = score;
+                best = out;
+            }
+            return true;
+        });
+        if (best.isEmpty()) {
+            emit toast(tr("No subtitles in that file."), QStringLiteral("pink"));
+            return;
+        }
+        p = best;
+    }
     if (!source(QStringLiteral("file:") + p)) {
         Source s;
         s.id = QStringLiteral("file:") + p;
