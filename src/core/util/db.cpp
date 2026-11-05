@@ -44,7 +44,7 @@ const char *APP_SCHEMA[] = {
     " kind TEXT NOT NULL, title TEXT NOT NULL, folder TEXT NOT NULL, poster TEXT, meta_id TEXT, meta_title TEXT,"
     " meta_poster TEXT, meta_banner TEXT, meta_desc TEXT, meta_year INTEGER, meta_manual INTEGER DEFAULT 0,"
     " comprehension INTEGER, UNIQUE(root, folder, title))",
-    "CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, series INTEGER NOT NULL REFERENCES series(id) ON DELETE CASCADE,"
+    "CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY, series INTEGER REFERENCES series(id) ON DELETE CASCADE,"
     " path TEXT UNIQUE NOT NULL, kind TEXT NOT NULL, title TEXT, season INTEGER, episode REAL, special INTEGER DEFAULT 0,"
     " size INTEGER, mtime INTEGER, duration REAL, position REAL DEFAULT 0, watched INTEGER DEFAULT 0, last_played INTEGER,"
     " sub_path TEXT, sub_track INTEGER, sub2_path TEXT, sub2_track INTEGER, audio_track INTEGER,"

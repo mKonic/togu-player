@@ -39,13 +39,15 @@ target_link_libraries(togu_core PUBLIC Qt6::Core Qt6::Gui Qt6::Sql Qt6::Network 
 
 file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS src/app/*.cpp src/app/*.h)
 qt_add_executable(togu-player ${APP_SOURCES})
-file(GLOB_RECURSE QML_FILES RELATIVE ${CMAKE_SOURCE_DIR} CONFIGURE_DEPENDS src/qml/*.qml)
+file(GLOB_RECURSE QML_FILES RELATIVE ${CMAKE_SOURCE_DIR} CONFIGURE_DEPENDS src/qml/*.qml src/qml/*.js)
+set_source_files_properties(src/qml/Theme.qml src/qml/Icons.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 qt_add_qml_module(togu-player
   URI Togu
   VERSION 1.0
   QML_FILES ${QML_FILES}
   RESOURCES assets/fonts/inter.woff2 assets/fonts/fredoka.woff2
   NO_RESOURCE_TARGET_PATH)
+target_include_directories(togu-player PRIVATE src/app)
 target_link_libraries(togu-player PRIVATE togu_core Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::OpenGL PkgConfig::MPV)
 install(TARGETS togu-player RUNTIME DESTINATION bin)
 

@@ -122,4 +122,12 @@ int moraCount(const QString &reading)
     return n;
 }
 
+QChar pitchClass(int position, const QString &reading, const QString &pos)
+{
+    if (position == 0) return u'h';
+    if (pos == u"動詞" || pos == u"形容詞") return u'k';
+    if (position == 1) return u'a';
+    return position >= moraCount(reading) ? u'o' : u'n';
+}
+
 } // namespace jp

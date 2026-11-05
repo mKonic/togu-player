@@ -41,7 +41,13 @@ void Words::load()
     while (q.next())
         m_rows.insert(q.value(0).toString(), {Status(q.value(1).toInt()), q.value(2).toBool(), q.value(3).toLongLong()});
     q.exec(QStringLiteral("SELECT word, MAX(mod) FROM anki_cards GROUP BY word"));
-    while (q.next()) m_cardMod.insert(q.value(0).toString(), q.value(1).toLongLong());
+    while (q.next()) {
+        m_cardMod.insert(q.value(0).toString(), q.value(1).toLongLong());
+        m_cards.insert(q.value(0).toString());
+    }
+    q.exec(QStringLiteral("SELECT v FROM settings WHERE k='cardWords'"));
+    if (q.next())
+        for (const QString &w : QString::fromUtf8(q.value(0).toByteArray()).split(QChar(0x1e), Qt::SkipEmptyParts)) m_cards.insert(w);
     m_loaded = true;
 }
 
@@ -135,6 +141,36 @@ void Words::clear()
         db::exec(db::app(), QStringLiteral("DELETE FROM words"));
     }
     emit changed({});
+}
+
+bool Words::hasCard(const QString &key) const
+{
+    QReadLocker lock(&m_lock);
+    return m_cards.contains(key);
+}
+
+void Words::setCards(const QSet<QString> &keys)
+{
+    {
+        QWriteLocker lock(&m_lock);
+        m_cards = keys;
+        QStringList l(keys.begin(), keys.end());
+        db::exec(db::app(), QStringLiteral("INSERT INTO settings (k, v) VALUES ('cardWords', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v"),
+                 {l.join(QChar(0x1e)).toUtf8()});
+    }
+    emit changed({});
+}
+
+void Words::addCard(const QString &key)
+{
+    QSet<QString> s;
+    {
+        QReadLocker lock(&m_lock);
+        if (m_cards.contains(key)) return;
+        s = m_cards;
+    }
+    s.insert(key);
+    setCards(s);
 }
 
 QHash<Status, int> Words::counts() const

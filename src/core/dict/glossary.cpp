@@ -135,7 +135,7 @@ QString tagStyle(const QJsonObject &data)
     const QString content = data.value("content").toString();
     if (content.contains(u"part-of-speech") || content == u"tag" || data.contains("code"))
         return QStringLiteral("background-color:#3c3c78;color:#cfd3ff;font-size:small;font-weight:600;");
-    if (content.contains(u"example")) return QStringLiteral("color:#9aa0c8;");
+    if (content.contains(u"example")) return QStringLiteral("color:#9aa0c8;font-size:small;");
     if (content.contains(u"xref") || content.contains(u"antonym")) return QStringLiteral("color:#8fb6ff;");
     if (content.contains(u"info") || content.contains(u"note") || content.contains(u"forms"))
         return QStringLiteral("color:#a9a9c9;font-size:small;");
@@ -178,7 +178,31 @@ QString Display::node(const QJsonValue &v, int depth) const
         style += QStringLiteral("font-size:small;");
     if (st.contains("color")) style += QStringLiteral("color:%1;").arg(esc(st.value("color").toString()));
     const QString sAttr = style.isEmpty() ? QString() : QStringLiteral(" style=\"%1\"").arg(style);
-    if (tag == u"ul" || tag == u"ol") return QStringLiteral("<%1>%2</%1>").arg(tag, inner);
+    const QString dc = n.value("data").toObject().value("content").toString();
+    // Meaning lists read as "to begin; to start" rather than a nested bullet list.
+    if ((tag == u"ul" || tag == u"ol") && dc == u"glossary") {
+        QStringList items;
+        const QJsonValue c = n.value("content");
+        for (const QJsonValue &li : c.isArray() ? c.toArray() : QJsonArray{c}) items << node(li.toObject().value("content"), depth + 1);
+        return QStringLiteral("<span>%1</span>").arg(items.join(QStringLiteral("; ")));
+    }
+    // A numbered sense is its own paragraph with its marker (①, ②...).
+    if (tag == u"li" && dc == u"sense") {
+        QString marker = st.value("listStyleType").toString();
+        marker.remove(u'"');
+        return QStringLiteral("<p style=\"margin-top:4px;margin-bottom:4px;\">%1%2</p>").arg(marker.isEmpty() ? QString() : u"<b>" + marker + u"</b> ", inner);
+    }
+    if (tag == u"ul" || tag == u"ol") {
+        // Lists of senses or other blocks are unwrapped; real lists keep their bullets.
+        const QJsonValue c = n.value("content");
+        bool blocks = true;
+        for (const QJsonValue &li : c.isArray() ? c.toArray() : QJsonArray{c}) {
+            const QString cd = li.toObject().value("data").toObject().value("content").toString();
+            if (cd != u"sense" && cd != u"sense-group") blocks = false;
+        }
+        if (blocks) return inner;
+        return QStringLiteral("<%1 style=\"margin-left:-20px;\">%2</%1>").arg(tag, inner);
+    }
     if (tag == u"li") return QStringLiteral("<li%1>%2</li>").arg(sAttr, inner);
     if (tag == u"table") return QStringLiteral("<table cellpadding=\"2\">%1</table>").arg(inner);
     if (tag == u"tr" || tag == u"td" || tag == u"th" || tag == u"thead" || tag == u"tbody")

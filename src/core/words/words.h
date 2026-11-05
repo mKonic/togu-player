@@ -4,6 +4,7 @@
 #include <QHash>
 #include <QObject>
 #include <QReadWriteLock>
+#include <QSet>
 #include <QStringList>
 
 enum class Status : int { Unknown = 0, Tracked = 1, Learning = 2, Known = 3, Ignored = 4 };
@@ -35,6 +36,11 @@ public:
     void importList(const QStringList &keys, Status s);
     void clear();
 
+    // Words that have a note in Anki (from the status sync or the card check).
+    bool hasCard(const QString &key) const;
+    void setCards(const QSet<QString> &keys);
+    void addCard(const QString &key);
+
     QHash<Status, int> counts() const;
     int knownCount() const;
     QList<std::pair<QString, Status>> all() const;
@@ -50,6 +56,7 @@ private:
     };
     mutable QReadWriteLock m_lock;
     QHash<QString, Row> m_rows;
-    QHash<QString, qint64> m_cardMod; // latest Anki card mod time per word, for manual overrides
+    QHash<QString, qint64> m_cardMod;
+    QSet<QString> m_cards; // latest Anki card mod time per word, for manual overrides
     bool m_loaded = false;
 };

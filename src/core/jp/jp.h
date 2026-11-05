@@ -34,5 +34,8 @@ QString escapeHtml(const QString &s);
 
 // The mora count of a kana reading (small kana join the one before).
 int moraCount(const QString &reading);
+// Accent pattern for a drop position: h heiban, a atamadaka, n nakadaka, o odaka,
+// k kifuku (verbs and i-adjectives with a drop, since it moves as they inflect).
+QChar pitchClass(int position, const QString &reading, const QString &pos);
 
 } // namespace jp
