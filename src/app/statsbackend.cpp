@@ -72,9 +72,11 @@ QVariantList Stats::topSeries(int days, int limit) const
 {
     QVariantList out;
     QSqlQuery q(db::app());
-    q.prepare(QStringLiteral("SELECT COALESCE(s.meta_title, s.title, i.title), im.kind, SUM(im.seconds) AS secs FROM immersion im"
+    // Loose files sit in a placeholder series ("Books", folder ""): those count under their own title.
+    q.prepare(QStringLiteral("SELECT CASE WHEN s.id IS NULL OR s.folder='' THEN i.title ELSE COALESCE(s.meta_title, s.title) END,"
+                             " im.kind, SUM(im.seconds) AS secs FROM immersion im"
                              " LEFT JOIN items i ON i.id=im.item LEFT JOIN series s ON s.id=COALESCE(im.series, i.series)"
-                             " WHERE im.day>=? GROUP BY COALESCE(s.id, -i.id) ORDER BY secs DESC LIMIT ?"));
+                             " WHERE im.day>=? GROUP BY CASE WHEN s.id IS NULL OR s.folder='' THEN -i.id ELSE s.id END ORDER BY secs DESC LIMIT ?"));
     q.addBindValue(QDate::currentDate().addDays(-days + 1).toString(Qt::ISODate));
     q.addBindValue(limit);
     db::exec(q);
