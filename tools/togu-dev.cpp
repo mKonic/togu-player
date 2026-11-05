@@ -3,7 +3,10 @@
 //   togu-dev [--data DIR] lookup TEXT
 //   togu-dev [--data DIR] tokenize TEXT
 //   togu-dev [--data DIR] info KEY...
+//   togu-dev [--data DIR] ankisync URL DECK
+#include "core/anki/statussync.h"
 #include "core/dict/dict.h"
+#include "core/words/words.h"
 #include "core/dict/glossary.h"
 #include "core/jp/tokenizer.h"
 #include "core/util/db.h"
@@ -45,6 +48,15 @@ int main(int argc, char **argv)
     } else if (cmd == u"tokenize") {
         for (const auto &tk : jp::tokenize(args.join(u' ')))
             out << tk.surface << "\t" << tk.lemma << "\t" << tk.lemmaReading << "\t" << tk.reading << "\t" << tk.word << "\n";
+    } else if (cmd == u"ankisync") {
+        // ankisync URL DECK
+        Words::instance().load();
+        statussync::Config cfg;
+        cfg.decks = {args.value(1)};
+        cfg.models.insert(QStringLiteral("Lapis"), {QStringLiteral("Expression"), QStringLiteral("ExpressionReading"), {}});
+        auto r = statussync::sync({args.value(0), {}}, cfg);
+        out << "cards=" << r.cards << " changed=" << r.changed << " words=" << r.words << " error=" << r.error << "\n";
+        for (const auto &[k, s] : Words::instance().all()) out << k.split(QChar(0x1f)).join(u'/') << " " << statusName(s) << "\n";
     } else if (cmd == u"info") {
         auto info = Dict::instance().info(args);
         auto gl = Dict::instance().gloss(args);

@@ -48,6 +48,14 @@ public:
     Q_INVOKABLE void browse(qlonglong noteId);
     Q_INVOKABLE QVariantList history(int limit = 50) const;
     Q_INVOKABLE void syncCardMarks();
+    // Word statuses from the chosen learning decks (statussync).
+    Q_INVOKABLE void syncStatuses(bool quiet = true);
+    Q_PROPERTY(QString statusSyncReport READ statusSyncReport NOTIFY statusSyncChanged)
+    Q_PROPERTY(bool statusSyncing READ statusSyncing NOTIFY statusSyncChanged)
+    QString statusSyncReport() const { return m_syncReport; }
+    bool statusSyncing() const { return m_syncing; }
+    // Field names of every note type, for the status settings.
+    Q_INVOKABLE void allModelFields();
 
 signals:
     void ankiChanged();
@@ -57,6 +65,8 @@ signals:
     void added(qlonglong noteId, const QString &expression);
     void failed(const QString &message);
     void toast(const QString &text, const QString &tone);
+    void statusSyncChanged();
+    void allFieldsReady(const QVariantMap &modelFields);
 
 private:
     explicit Cards(QObject *parent = nullptr);
@@ -66,4 +76,7 @@ private:
     QStringList m_decks, m_models;
     int m_busy = 0;
     int m_token = 0;
+    QString m_syncReport;
+    bool m_syncing = false;
+    class QTimer *m_syncTimer = nullptr;
 };

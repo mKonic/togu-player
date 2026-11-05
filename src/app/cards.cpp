@@ -1,6 +1,7 @@
 #include "cards.h"
 
 #include "core/anki/anki.h"
+#include "core/anki/statussync.h"
 #include "core/dict/glossary.h"
 #include "core/jp/jp.h"
 #include "core/jp/tokenizer.h"
@@ -19,6 +20,8 @@
 #include <QJsonObject>
 #include <QQmlEngine>
 #include <QQuickItemGrabResult>
+#include <QGuiApplication>
+#include <QTimer>
 #include <QtConcurrent>
 
 namespace {
@@ -58,7 +61,82 @@ Cards *Cards::create(QQmlEngine *, QJSEngine *)
 
 Cards::Cards(QObject *parent) : QObject(parent)
 {
-    QTimer::singleShot(2000, this, [this] { refresh(); });
+    QTimer::singleShot(2000, this, [this] {
+        refresh();
+        syncStatuses();
+    });
+    // Again every ten minutes and whenever the window comes back to the front (after reviewing in Anki).
+    m_syncTimer = new QTimer(this);
+    m_syncTimer->setInterval(10 * 60 * 1000);
+    connect(m_syncTimer, &QTimer::timeout, this, [this] { syncStatuses(); });
+    m_syncTimer->start();
+    connect(qGuiApp, &QGuiApplication::applicationStateChanged, this, [this](Qt::ApplicationState st) {
+        static qint64 last = 0;
+        const qint64 now = QDateTime::currentSecsSinceEpoch();
+        if (st == Qt::ApplicationActive && now - last > 60) {
+            last = now;
+            syncStatuses();
+        }
+    });
+}
+
+void Cards::syncStatuses(bool quiet)
+{
+    if (!Settings::v("ankiStatusSync").toBool() || m_syncing) return;
+    statussync::Config cfg;
+    cfg.decks = Settings::v("ankiStatusDecks").toStringList();
+    cfg.knownDecks = Settings::v("ankiKnownDecks").toStringList();
+    cfg.rules.matureDays = Settings::v("ankiMatureDays").toDouble();
+    cfg.rules.leechLapses = Settings::v("ankiLeechLapses").toInt();
+    const QVariantMap models = Settings::v("ankiStatusModels").toMap();
+    for (auto it = models.constBegin(); it != models.constEnd(); ++it) {
+        const QVariantMap m = it.value().toMap();
+        statussync::ModelConfig mc{m.value("word").toString(), m.value("reading").toString(), {}};
+        for (const QVariant &t : m.value("templates").toList()) mc.templates << t.toInt();
+        cfg.models.insert(it.key(), mc);
+    }
+    if (cfg.decks.isEmpty() && cfg.knownDecks.isEmpty()) return;
+    m_syncing = true;
+    emit statusSyncChanged();
+    (void)QtConcurrent::run([this, cfg, quiet, c = conn()] {
+        statussync::Config full = cfg;
+        // Note types without a field choice: guess word and reading fields from their names.
+        const anki::Result names = anki::invoke(c, QStringLiteral("modelNames"));
+        for (const QJsonValue &n : names.value.toArray()) {
+            const QString model = n.toString();
+            if (full.models.contains(model)) continue;
+            statussync::ModelConfig mc;
+            const QVariantMap preset = model.contains(u"Lapis", Qt::CaseInsensitive) ? anki::lapisPreset() : QVariantMap();
+            for (const QJsonValue &f : anki::invoke(c, QStringLiteral("modelFieldNames"), {{"modelName", model}}).value.toArray()) {
+                const QString t = preset.value(f.toString(), anki::guessField(f.toString())).toString();
+                if (t == u"{expression}" && mc.wordField.isEmpty()) mc.wordField = f.toString();
+                if (t == u"{reading}" && mc.readingField.isEmpty()) mc.readingField = f.toString();
+            }
+            full.models.insert(model, mc);
+        }
+        const statussync::Report r = statussync::sync(c, full);
+        QMetaObject::invokeMethod(this, [this, r, quiet] {
+            m_syncing = false;
+            m_syncReport = r.error.isEmpty()
+                ? tr("%1 cards checked, %2 changed, %3 words from Anki · %4").arg(r.cards).arg(r.changed).arg(r.words).arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm")))
+                : r.error;
+            emit statusSyncChanged();
+            if (!quiet) emit toast(r.error.isEmpty() ? tr("Word statuses updated from Anki") : r.error, r.error.isEmpty() ? QStringLiteral("teal") : QStringLiteral("pink"));
+        });
+    });
+}
+
+void Cards::allModelFields()
+{
+    (void)QtConcurrent::run([this, c = conn()] {
+        QVariantMap out;
+        for (const QJsonValue &n : anki::invoke(c, QStringLiteral("modelNames")).value.toArray()) {
+            QStringList fields;
+            for (const QJsonValue &f : anki::invoke(c, QStringLiteral("modelFieldNames"), {{"modelName", n.toString()}}).value.toArray()) fields << f.toString();
+            out.insert(n.toString(), fields);
+        }
+        QMetaObject::invokeMethod(this, [this, out] { emit allFieldsReady(out); });
+    });
 }
 
 void Cards::busyInc(int d)
