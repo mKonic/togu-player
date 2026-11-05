@@ -32,17 +32,19 @@ ComboBox {
         border.color: Theme.line
     }
     delegate: ItemDelegate {
-        width: c.width
+        id: row
+        required property int index
+        width: ListView.view ? ListView.view.width : c.width
         height: 34
-        highlighted: c.highlightedIndex === index
+        highlighted: c.highlightedIndex === row.index
         contentItem: Text {
-            text: model[c.textRole] !== undefined ? model[c.textRole] : modelData
+            text: c.textAt(row.index)
             color: Theme.text
             font.pixelSize: 14
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
         }
-        background: Rectangle { color: highlighted ? Theme.fill : "transparent"; radius: 8 }
+        background: Rectangle { color: row.highlighted ? Theme.fill : "transparent"; radius: 8 }
     }
     popup: Popup {
         y: c.height + 4
