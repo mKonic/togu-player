@@ -62,7 +62,7 @@ jobs:
           ref=$(echo "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" | sed -E 's/[-\/]+/_/g')
           name="Togu-${ref}-r$(git rev-list --count HEAD)"
           mkdir -p dist
-          cp /tmp/pkg/*.pkg.tar.zst "dist/$name-x86_64.pkg.tar.zst"
+          cp /tmp/pkg/togu-player-git-r*-x86_64.pkg.tar.zst "dist/$name-x86_64.pkg.tar.zst"
           echo "name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Upload package

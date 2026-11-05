@@ -59,7 +59,7 @@ jobs:
           sudo -u builder git config --global --add safe.directory '*'
           (cd /tmp/pkg && sudo -u builder makepkg --nodeps --noconfirm)
           mkdir -p dist
-          cp /tmp/pkg/*.pkg.tar.zst "dist/togu-player-$TAG-x86_64.pkg.tar.zst"
+          cp /tmp/pkg/togu-player-git-r*-x86_64.pkg.tar.zst "dist/togu-player-$TAG-x86_64.pkg.tar.zst"
           ls -l dist
 
       - name: Release notes from CHANGELOG.md
