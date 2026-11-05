@@ -101,7 +101,7 @@ MpvItem::MpvItem(QQuickItem *parent) : QQuickFramebufferObject(parent)
     mpv_set_option_string(m_mpv, "input-vo-keyboard", "no");
     mpv_set_option_string(m_mpv, "osc", "no");
     mpv_set_option_string(m_mpv, "osd-level", "0");
-    mpv_set_option_string(m_mpv, "sub-auto", "no");          // togu chooses subtitles itself
+    mpv_set_option_string(m_mpv, "sub-auto", "no");          // Togu chooses subtitles itself
     mpv_set_option_string(m_mpv, "sid", "no");
     mpv_set_option_string(m_mpv, "alang", "ja,jpn,jp");
     mpv_set_option_string(m_mpv, "audio-display", "no");

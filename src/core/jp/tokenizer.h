@@ -1,5 +1,5 @@
 #pragma once
-// lindera (IPADIC) analysis plus togu's merge rules, which join a head word with
+// lindera (IPADIC) analysis plus Togu's merge rules, which join a head word with
 // its inflection so 読んでいる is one unit.
 
 #include <QList>

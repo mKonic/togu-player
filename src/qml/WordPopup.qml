@@ -2,12 +2,14 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
 
-// togu's word popup: entries, definitions per dictionary, pitch, frequency, kanji,
+// Togu's word popup: entries, definitions per dictionary, pitch, frequency, kanji,
 // and the status and card controls along the bottom.
 Rectangle {
     id: pop
     property var entries: []
     property var kanjiList: []
+    property var libraryLines: []
+    signal lineRequested(var hit)
     property int current: 0
     property string tokenKey: ""      // the hovered token's key (status target when no entry)
     property string tokenSurface: ""
@@ -194,6 +196,39 @@ Rectangle {
                             else Togu.openExternally(link)
                         }
                         MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                    }
+                }
+            }
+            // The word in your own library
+            Column {
+                visible: pop.libraryLines.length > 0
+                width: bodyCol.width - 40
+                spacing: 4
+                Text {
+                    text: qsTr("In your library")
+                    font.pixelSize: 11; font.weight: Font.DemiBold; font.capitalization: Font.AllUppercase; font.letterSpacing: 0.6
+                    color: Theme.teal
+                }
+                Repeater {
+                    model: pop.libraryLines.slice(0, 6)
+                    delegate: Rectangle {
+                        width: parent.width
+                        height: lc.implicitHeight + 10
+                        radius: 8
+                        color: lh.hovered ? Theme.fill : "transparent"
+                        HoverHandler { id: lh; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { onTapped: pop.lineRequested(modelData) }
+                        Column {
+                            id: lc
+                            x: 6; y: 5
+                            width: parent.width - 12
+                            Text { width: parent.width; text: modelData.text; color: Theme.text; font.family: Theme.jp; font.pixelSize: 14; wrapMode: Text.Wrap }
+                            Text {
+                                width: parent.width
+                                text: modelData.seriesTitle + (modelData.episode >= 0 ? " · " + qsTr("ep. %1").arg(modelData.episode) : "") + " · " + Togu.formatTime(modelData.start)
+                                color: Theme.text3; font.pixelSize: 11; elide: Text.ElideRight
+                            }
+                        }
                     }
                 }
             }

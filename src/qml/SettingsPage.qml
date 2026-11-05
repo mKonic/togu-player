@@ -176,6 +176,7 @@ Item {
                     color: Theme.text2; font.pixelSize: 13; wrapMode: Text.Wrap; Layout.fillWidth: true
                 }
             }
+            StarterDicts { visible: Togu.starterDicts.some(d => !d.installed) }
             FileDialog {
                 id: dictDialog
                 fileMode: FileDialog.OpenFiles
@@ -213,7 +214,7 @@ Item {
             }
             Section {
                 title: qsTr("About")
-                Text { text: "togu " + Togu.version; color: Theme.text2; font.pixelSize: 13 }
+                Text { text: "Togu " + Togu.version; color: Theme.text2; font.pixelSize: 13 }
             }
         }
     }

@@ -104,6 +104,8 @@ public:
 
     Q_INVOKABLE void open(const QString &pathOrUrl, int itemId = 0);
     Q_INVOKABLE void openItem(int itemId);
+    // Opens and starts at `seconds` instead of the saved position.
+    Q_INVOKABLE void openAt(const QString &path, int itemId, double seconds);
     Q_INVOKABLE void close();
     Q_INVOKABLE void selectPrimary(const QString &id);
     Q_INVOKABLE void selectSecondary(const QString &id);

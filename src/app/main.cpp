@@ -2,6 +2,7 @@
 #include "core/dict/dict.h"
 #include "core/util/db.h"
 #include "core/words/words.h"
+#include "librarybackend.h"
 #include "settings.h"
 
 #include <QFontDatabase>
@@ -41,8 +42,8 @@ int main(int argc, char *argv[])
 
     QGuiApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("togu-player"));
-    app.setApplicationDisplayName(QStringLiteral("togu"));
-    app.setOrganizationName(QStringLiteral("togu"));
+    app.setApplicationDisplayName(QStringLiteral("Togu"));
+    app.setOrganizationName(QStringLiteral("Togu"));
     app.setDesktopFileName(QStringLiteral("togu-player"));
     std::setlocale(LC_NUMERIC, "C");
 
@@ -60,10 +61,12 @@ int main(int argc, char *argv[])
 
     QQmlApplicationEngine engine;
     engine.addImageProvider(QStringLiteral("dict"), new DictImages);
+    engine.addImageProvider(QStringLiteral("thumb"), new ThumbProvider);
     QStringList files;
     for (int i = 1; i < argc; ++i) files << QString::fromLocal8Bit(argv[i]);
     engine.rootContext()->setContextProperty(QStringLiteral("startupFiles"), files);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app, [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.loadFromModule("Togu", "Main");
+    Togu::instance()->importBundled();
     return app.exec();
 }

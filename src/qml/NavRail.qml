@@ -19,7 +19,7 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             Layout.bottomMargin: 18
-            text: "togu"
+            text: "Togu"
             font.family: Theme.round
             font.pixelSize: 26
             font.weight: Font.DemiBold

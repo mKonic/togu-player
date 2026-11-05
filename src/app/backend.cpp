@@ -13,7 +13,33 @@
 #include <QGuiApplication>
 #include <QJSValue>
 #include <QQmlEngine>
+#include <QDir>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QSaveFile>
+#include <QStandardPaths>
 #include <QtConcurrent>
+
+#include "core/util/db.h"
+
+namespace {
+
+struct Starter {
+    const char *id, *title, *about, *url, *match;
+    bool preselected;
+};
+
+// Yomitan's usual sources; the same list togu offers.
+const Starter STARTERS[] = {
+    {"jitendex", "Jitendex", "Japanese to English definitions, with examples", "https://github.com/stephenmk/stephenmk.github.io/releases/latest/download/jitendex-yomitan.zip", "^Jitendex", true},
+    {"jpdb", "JPDB frequency", "Word frequency, used for stars and recommendations", "https://github.com/Kuuuube/yomitan-dictionaries/raw/main/dictionaries/JPDB_v2.2_Frequency_Kana_2024-10-13.zip", "^JPDB", true},
+    {"kanjium", "Kanjium pitch accents", "Pitch accent for the graph and pitch colours", "https://github.com/toasted-nutbread/yomichan-pitch-accent-dictionary/releases/download/1.0.0/kanjium_pitch_accents.zip", "pitch|アクセント|Kanjium", true},
+    {"kanjidic", "KANJIDIC", "Kanji meanings and readings", "https://github.com/yomidevs/jmdict-yomitan/releases/latest/download/KANJIDIC_english.zip", "^KANJIDIC", true},
+    {"jmdict", "JMdict (English)", "Plainer definitions, if you prefer them to Jitendex", "https://github.com/yomidevs/jmdict-yomitan/releases/latest/download/JMdict_english.zip", "^JMdict", false},
+    {"jmnedict", "JMnedict", "Names of people and places", "https://github.com/yomidevs/jmdict-yomitan/releases/latest/download/JMnedict.zip", "^JMnedict", false},
+};
+
+} // namespace
 
 Togu *Togu::instance()
 {
@@ -190,6 +216,84 @@ void Togu::importDicts(const QList<QUrl> &files)
             emit statusesChanged({});
         });
     });
+}
+
+QVariantList Togu::starterDicts() const
+{
+    QVariantList out;
+    const auto installed = Dict::instance().list();
+    for (const Starter &st : STARTERS) {
+        const QRegularExpression re(QString::fromUtf8(st.match), QRegularExpression::CaseInsensitiveOption);
+        bool have = std::any_of(installed.begin(), installed.end(), [&](const DictInfo &d) { return re.match(d.title).hasMatch(); });
+        out << QVariantMap{{"id", st.id}, {"title", st.title}, {"about", st.about}, {"installed", have}, {"preselected", st.preselected}};
+    }
+    return out;
+}
+
+void Togu::downloadDicts(const QStringList &ids)
+{
+    if (m_dictBusy || ids.isEmpty()) return;
+    if (!m_net) m_net = new QNetworkAccessManager(this);
+    m_dictBusy = true;
+    m_dictFraction = 0;
+    emit dictProgressChanged();
+    const QString dir = db::cacheDir() + QStringLiteral("/downloads");
+    QDir().mkpath(dir);
+    auto queue = std::make_shared<QList<const Starter *>>();
+    for (const Starter &st : STARTERS)
+        if (ids.contains(QString::fromUtf8(st.id))) queue->append(&st);
+    auto files = std::make_shared<QList<QUrl>>();
+    const int total = int(queue->size());
+    auto next = std::make_shared<std::function<void()>>();
+    *next = [this, queue, files, total, dir, next] {
+        if (queue->isEmpty()) {
+            m_dictBusy = false;
+            emit dictProgressChanged();
+            importDicts(*files);
+            return;
+        }
+        const Starter *st = queue->takeFirst();
+        const int done = total - int(queue->size()) - 1;
+        QNetworkRequest req(QUrl(QString::fromUtf8(st->url)));
+        req.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+        req.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("togu-player"));
+        QNetworkReply *r = m_net->get(req);
+        const QString title = QString::fromUtf8(st->title);
+        connect(r, &QNetworkReply::downloadProgress, this, [this, title, done, total](qint64 got, qint64 size) {
+            m_dictProgress = tr("Downloading %1 — %2 MB").arg(title).arg(got / 1048576.0, 0, 'f', 1);
+            m_dictFraction = (done + (size > 0 ? double(got) / size : 0)) / total * 0.5;
+            emit dictProgressChanged();
+        });
+        connect(r, &QNetworkReply::finished, this, [this, r, st, files, dir, next, title] {
+            r->deleteLater();
+            if (r->error() != QNetworkReply::NoError) {
+                emit toast(tr("Couldn't download %1: %2").arg(title, r->errorString()), QStringLiteral("pink"));
+            } else {
+                const QString path = dir + u'/' + QString::fromUtf8(st->id) + QStringLiteral(".zip");
+                QSaveFile f(path);
+                if (f.open(QIODevice::WriteOnly)) {
+                    f.write(r->readAll());
+                    if (f.commit()) files->append(QUrl::fromLocalFile(path));
+                }
+            }
+            (*next)();
+        });
+    };
+    (*next)();
+}
+
+void Togu::importBundled()
+{
+    if (!Dict::instance().empty()) return;
+    if (db::scalar(db::app(), QStringLiteral("SELECT v FROM settings WHERE k='bundledImported'")).isValid()) return;
+    QList<QUrl> files;
+    for (const QString &base : QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation)) {
+        QDir d(base + QStringLiteral("/togu-player/dictionaries"));
+        for (const QFileInfo &f : d.entryInfoList({QStringLiteral("*.zip")}, QDir::Files, QDir::Name)) files << QUrl::fromLocalFile(f.absoluteFilePath());
+        if (!files.isEmpty()) break;
+    }
+    db::exec(db::app(), QStringLiteral("INSERT OR REPLACE INTO settings (k, v) VALUES ('bundledImported', '{\"v\":true}')"));
+    if (!files.isEmpty()) importDicts(files);
 }
 
 void Togu::removeDict(int id)

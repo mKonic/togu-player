@@ -11,7 +11,7 @@ ApplicationWindow {
     minimumWidth: 900
     minimumHeight: 560
     visible: true
-    title: player.visible && player.session.title ? player.session.title + " — togu" : "togu"
+    title: player.visible && player.session.title ? player.session.title + " — Togu" : "Togu"
     color: Theme.bg
     font.family: Theme.sans
 

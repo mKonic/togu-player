@@ -27,7 +27,7 @@ QtObject {
         "folder": "<path d='M3.5 7.5A2 2 0 0 1 5.5 5.5h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z'/>",
         "plus": "<path d='M12 5v14M5 12h14'/>",
         "minus": "<path d='M5 12h14'/>",
-        "film": "<rect x='3.5' y='4' width='17' height='16' rx='2.5'/><path d='M3.5 9h17M3.5 15h17M8.5 4v16M15.5 4v16'/>",
+        "film": "<rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M10 9.5v5l4.5-2.5z' fill='C' stroke-width='1.5'/>",
         "music": "<path d='M9 18V6l11-2v12'/><circle cx='6.5' cy='18' r='2.5'/><circle cx='17.5' cy='16' r='2.5'/>",
         "book": "<path d='M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15.5H5.5A1.5 1.5 0 0 0 4 21z'/><path d='M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15.5h5.5A1.5 1.5 0 0 1 20 21z'/>",
         "manga": "<rect x='3.5' y='3.5' width='17' height='17' rx='2'/><path d='M3.5 11h9M12.5 3.5v17M12.5 14.5h8'/>",
@@ -69,11 +69,14 @@ QtObject {
         "target": "<circle cx='12' cy='12' r='8.5'/><circle cx='12' cy='12' r='4.5'/><circle cx='12' cy='12' r='1' fill='C'/>"
     })
 
+    // SVG wants #rrggbb plus a separate opacity, not Qt's #aarrggbb.
+    function hex(v) { var h = Math.round(v * 255).toString(16); return h.length < 2 ? "0" + h : h }
     function svg(name, color, weight) {
         var body = paths[name] || paths["info"]
-        var c = String(color)
+        var col = Qt.color(color)
+        var c = "#" + hex(col.r) + hex(col.g) + hex(col.b)
         return "data:image/svg+xml;utf8," + encodeURIComponent(
-            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='" + c +
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' opacity='" + col.a + "' stroke='" + c +
             "' stroke-width='" + (weight || 2) + "' stroke-linecap='round' stroke-linejoin='round'>" +
             body.replace(/='C'/g, "='" + c + "'") + "</svg>")
     }

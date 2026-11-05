@@ -19,6 +19,7 @@ class Togu : public QObject {
     Q_PROPERTY(QString dictProgress READ dictProgress NOTIFY dictProgressChanged)
     Q_PROPERTY(double dictFraction READ dictFraction NOTIFY dictProgressChanged)
     Q_PROPERTY(QString version READ version CONSTANT)
+    Q_PROPERTY(QVariantList starterDicts READ starterDicts NOTIFY dictsChanged)
 
 public:
     static Togu *instance();
@@ -35,12 +36,16 @@ public:
     Q_INVOKABLE QVariantList kanji(const QString &text);
     Q_INVOKABLE QString status(const QString &key) const;
     Q_INVOKABLE void setStatus(const QVariant &keys, const QString &status);
-    // Cycles a word the way Migaku's number keys do.
     Q_INVOKABLE QVariantList tokenize(const QString &text);
     Q_INVOKABLE QString furiganaHtml(const QString &surface, const QString &reading) const;
     Q_INVOKABLE QVariantList pitchMorae(const QString &reading, int position) const;
 
     Q_INVOKABLE void importDicts(const QList<QUrl> &files);
+    QVariantList starterDicts() const;
+    // Downloads the chosen starter dictionaries from their usual sources, then imports them.
+    Q_INVOKABLE void downloadDicts(const QStringList &ids);
+    // First run: dictionaries a package placed in /usr/share/togu-player/dictionaries.
+    void importBundled();
     Q_INVOKABLE void removeDict(int id);
     Q_INVOKABLE void setDictEnabled(int id, bool on);
     Q_INVOKABLE void moveDict(int id, int delta);
@@ -68,6 +73,7 @@ signals:
 
 private:
     explicit Togu(QObject *parent = nullptr);
+    class QNetworkAccessManager *m_net = nullptr;
     bool m_dictBusy = false;
     QString m_dictProgress;
     double m_dictFraction = 0;

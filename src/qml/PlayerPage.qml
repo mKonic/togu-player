@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import QtQuick.Effects
 import Togu
 
-// The player: video (or cover art for audio), togu's subtitle layer, controls,
+// The player: video (or cover art for audio), Togu's subtitle layer, controls,
 // the line list and the subtitle menu.
 FocusScope {
     id: page
@@ -44,6 +44,11 @@ FocusScope {
         player: mpv
         onToast: (text, tone) => toasts.show(text, tone)
         onSyncStateChanged: if (syncState === "applied" || syncState === "inSync") syncHide.restart()
+        // Straight on to the next episode.
+        onFinished: {
+            const next = Library.nextItem(itemId)
+            if (next) { const it = Library.item(next); session.openAt(it.path, next, 0) }
+        }
     }
     Timer { id: syncHide; interval: 4000; onTriggered: if (session.syncState !== "offered" && session.syncState !== "running") session.dismissSync() }
 
@@ -187,6 +192,7 @@ FocusScope {
         onCardRequested: entry => page.requestCard(entry)
         onQueryRequested: text => { entries = Togu.lookup(text); current = 0 }
         onCloseRequested: page.closePopup()
+        onLineRequested: hit => { page.closePopup(); session.openAt(hit.path, hit.item, hit.start) }
         onHoveredChanged: if (!hovered && page.pausedByHover) resumeTimer.restart()
     }
     function lookupToken(lineIndex, tokenIndex, item, container) {
@@ -201,6 +207,8 @@ FocusScope {
         popup.tokenSurface = tok.s
         popup.entries = Togu.lookup(session.textFrom(lineIndex, tokenIndex))
         popup.kanjiList = Togu.kanji(popup.entries.length ? popup.entries[0].expression : tok.s)
+        popup.libraryLines = Library.linesWithWord(popup.entries.length ? popup.entries[0].key : tok.k, 8)
+            .filter(h => !(h.item === session.itemId && Math.abs(h.start - (popup.line ? popup.line.start - session.offset : -1)) < 0.05))
         popup.current = 0
         const p = item.mapToItem(page, 0, 0)
         popup.anchorX = p.x + item.width / 2

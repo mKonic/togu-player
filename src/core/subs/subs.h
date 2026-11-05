@@ -1,6 +1,6 @@
 #pragma once
 // Subtitle parsing and clean-up (ported from togu), plus the ASS split: dialogue goes
-// to togu's own layer, signs and typesetting stay with mpv.
+// to Togu's own layer, signs and typesetting stay with mpv.
 
 #include <QList>
 #include <QString>

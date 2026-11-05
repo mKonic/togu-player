@@ -1,7 +1,7 @@
 pragma Singleton
 import QtQuick
 
-// togu's palette. Dark is the default: this is a player.
+// Togu's palette. Dark is the default: this is a player.
 QtObject {
     readonly property bool dark: Settings.theme !== "light"
 

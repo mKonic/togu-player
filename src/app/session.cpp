@@ -186,6 +186,16 @@ void PlaybackSession::open(const QString &pathOrUrl, int itemId)
     probeAndChooseSubs();
 }
 
+void PlaybackSession::openAt(const QString &path, int itemId, double seconds)
+{
+    if (path == m_path && m_player) {
+        m_player->seek(seconds);
+        return;
+    }
+    open(path, itemId);
+    m_restorePosition = seconds;
+}
+
 void PlaybackSession::openItem(int itemId)
 {
     const QString path = db::scalar(db::app(), QStringLiteral("SELECT path FROM items WHERE id=?"), {itemId}).toString();
@@ -394,7 +404,7 @@ Loaded loadSource(const QString &mediaPath, const QString &path, const media::St
     QString file = path;
     if (isTrack) {
         if (!stream.textSub()) {
-            out.error = QObject::tr("This track is made of images; togu can only read text subtitles.");
+            out.error = QObject::tr("This track is made of images; Togu can only read text subtitles.");
             return out;
         }
         file = media::extractSubtitle(mediaPath, stream);
