@@ -630,7 +630,7 @@ FocusScope {
         }
     }
 
-    FileDialog {
+    FilePicker {
         id: importDialog
         property bool secondary: false
         title: qsTr("Import subtitles")

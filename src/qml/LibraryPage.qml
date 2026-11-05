@@ -20,13 +20,13 @@ Item {
     readonly property var seriesList: { const dep = Library.revision; return dep === undefined ? null : Library.series(kind, sort, filter) }
     readonly property var continueList: { const dep = Library.revision; return dep === undefined ? null : Library.continueItems(kind) }
 
-    FolderDialog {
+    FilePicker { folder: true;
         id: folderDialog
         title: lib.kind === "audio" ? qsTr("Add an audio folder") : qsTr("Add a video folder")
         currentFolder: StandardPaths.writableLocation(lib.kind === "audio" ? StandardPaths.MusicLocation : StandardPaths.MoviesLocation)
         onAccepted: Library.addRoot(selectedFolder, lib.kind)
     }
-    FileDialog {
+    FilePicker {
         id: fileDialog
         title: qsTr("Open a file")
         currentFolder: StandardPaths.writableLocation(lib.kind === "audio" ? StandardPaths.MusicLocation : StandardPaths.MoviesLocation)

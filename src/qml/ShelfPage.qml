@@ -23,13 +23,13 @@ Item {
         return out
     }
 
-    FolderDialog {
+    FilePicker { folder: true;
         id: folderDialog
         title: shelf.kind === "manga" ? qsTr("Add a manga folder") : qsTr("Add a book folder")
         currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
         onAccepted: Library.addRoot(selectedFolder, shelf.kind)
     }
-    FileDialog {
+    FilePicker {
         id: fileDialog
         title: qsTr("Open a file")
         currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)

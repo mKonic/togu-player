@@ -178,7 +178,7 @@ Item {
                 }
             }
             StarterDicts { visible: Togu.starterDicts.some(d => !d.installed) }
-            FileDialog {
+            FilePicker {
                 id: dictDialog
                 title: qsTr("Add dictionaries")
                 currentFolder: StandardPaths.writableLocation(StandardPaths.DownloadLocation)
@@ -212,8 +212,8 @@ Item {
                     TButton { small: true; quiet: true; tone: "plain"; iconName: "upload"; text: qsTr("Import…"); onClicked: importWords.open() }
                     TButton { small: true; quiet: true; tone: "plain"; iconName: "download"; text: qsTr("Export…"); onClicked: exportWords.open() }
                 }
-                FileDialog { id: importWords; title: qsTr("Import a word list"); currentFolder: StandardPaths.writableLocation(StandardPaths.DownloadLocation); nameFilters: [qsTr("Text (*.txt *.csv *.tsv)"), qsTr("All files (*)")]; onAccepted: Togu.importWordList(Togu.readTextFile(selectedFile), listStatus.currentValue) }
-                FileDialog { id: exportWords; title: qsTr("Export the word list"); currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation); fileMode: FileDialog.SaveFile; defaultSuffix: "txt"; onAccepted: Togu.writeTextFile(selectedFile, Togu.exportWordList(listStatus.currentValue)) }
+                FilePicker { id: importWords; title: qsTr("Import a word list"); currentFolder: StandardPaths.writableLocation(StandardPaths.DownloadLocation); nameFilters: [qsTr("Text (*.txt *.csv *.tsv)"), qsTr("All files (*)")]; onAccepted: Togu.importWordList(Togu.readTextFile(selectedFile), listStatus.currentValue) }
+                FilePicker { id: exportWords; currentName: qsTr("words") + ".txt"; title: qsTr("Export the word list"); currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation); fileMode: FileDialog.SaveFile; defaultSuffix: "txt"; onAccepted: Togu.writeTextFile(selectedFile, Togu.exportWordList(listStatus.currentValue)) }
             }
             Section {
                 title: qsTr("About")

@@ -223,7 +223,7 @@ Item {
 
     MetaDialog { id: metaDialog; anchors.centerIn: parent }
     EditInfoDialog { id: editInfo; anchors.centerIn: parent }
-    FolderDialog {
+    FilePicker { folder: true;
         id: condenseDir
         title: qsTr("Save condensed audio to")
         currentFolder: sp.eps.length ? Togu.fileUrl(sp.eps[0].path.substring(0, sp.eps[0].path.lastIndexOf("/"))) : ""

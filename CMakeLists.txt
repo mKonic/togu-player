@@ -9,7 +9,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
 
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Sql Network Concurrent Qml Quick QuickControls2 OpenGL Test WebEngineQuick)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Sql Network Concurrent DBus Qml Quick QuickControls2 OpenGL Test WebEngineQuick)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
 pkg_check_modules(ARCHIVE REQUIRED IMPORTED_TARGET libarchive)
@@ -47,7 +47,7 @@ qt_add_qml_module(togu-player
   QML_FILES ${QML_FILES}
   RESOURCES assets/fonts/inter.woff2 assets/fonts/fredoka.woff2 assets/togu-player.png)
 target_include_directories(togu-player PRIVATE src/app)
-target_link_libraries(togu-player PRIVATE togu_core Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::OpenGL Qt6::WebEngineQuick PkgConfig::MPV)
+target_link_libraries(togu-player PRIVATE togu_core Qt6::DBus Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::OpenGL Qt6::WebEngineQuick PkgConfig::MPV)
 install(TARGETS togu-player RUNTIME DESTINATION bin)
 install(FILES packaging/togu-player.desktop DESTINATION share/applications)
 install(FILES assets/togu-player.png DESTINATION share/icons/hicolor/128x128/apps)
