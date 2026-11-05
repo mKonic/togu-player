@@ -52,6 +52,8 @@ public:
 
     Q_INVOKABLE void importWordList(const QString &text, const QString &status);
     Q_INVOKABLE QString exportWordList(const QString &status) const;
+    // The Words page: saved words with a status, newest first or by frequency.
+    Q_INVOKABLE QVariantMap wordList(const QString &status, const QString &query, const QString &sort, int limit) const;
     Q_INVOKABLE void clearWords();
 
     Q_INVOKABLE QString readTextFile(const QUrl &file) const;

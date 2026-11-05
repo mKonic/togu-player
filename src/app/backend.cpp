@@ -328,6 +328,71 @@ void Togu::importWordList(const QString &text, const QString &status)
     emit toast(tr("%n word(s) imported", nullptr, int(keys.size())), QStringLiteral("teal"));
 }
 
+QVariantMap Togu::wordList(const QString &status, const QString &query, const QString &sort, int limit) const
+{
+    QString where = QStringLiteral("1=1");
+    QVariantList args;
+    if (!status.isEmpty() && status != u"all") {
+        where += QStringLiteral(" AND s=?");
+        args << int(statusFromName(status));
+    }
+    const QString q = query.trimmed();
+    if (!q.isEmpty()) {
+        // Readings are stored in hiragana; match a katakana query too.
+        where += QStringLiteral(" AND (w LIKE ? OR w LIKE ?)");
+        args << u'%' + q + u'%' << u'%' + jp::toHiragana(q) + u'%';
+    }
+    QSqlQuery r(db::app());
+    r.prepare(QStringLiteral("SELECT w, s, t, manual FROM words WHERE ") + where + QStringLiteral(" ORDER BY t DESC"));
+    for (const QVariant &a : args) r.addBindValue(a);
+    db::exec(r);
+    struct Row {
+        QString key;
+        int s;
+        qint64 t;
+        bool manual;
+        int rank = 0;
+    };
+    QList<Row> rows;
+    while (r.next()) rows.append({r.value(0).toString(), r.value(1).toInt(), r.value(2).toLongLong(), r.value(3).toBool()});
+    const int total = rows.size();
+    if (sort == u"freq" || sort == u"alpha") {
+        if (sort == u"freq") {
+            QStringList keys;
+            for (const Row &w : rows) keys << w.key;
+            const auto info = Dict::instance().info(keys);
+            for (Row &w : rows) w.rank = info.value(w.key).rank;
+            // Unlisted words go last.
+            std::stable_sort(rows.begin(), rows.end(), [](const Row &a, const Row &b) {
+                return (a.rank ? a.rank : INT_MAX) < (b.rank ? b.rank : INT_MAX);
+            });
+        } else {
+            std::stable_sort(rows.begin(), rows.end(), [](const Row &a, const Row &b) { return jp::splitKey(a.key).second < jp::splitKey(b.key).second; });
+        }
+    }
+    if (limit > 0 && rows.size() > limit) rows.resize(limit);
+    QStringList keys;
+    for (const Row &w : rows) keys << w.key;
+    const auto gloss = Dict::instance().gloss(keys);
+    const auto info = Dict::instance().info(keys);
+    QVariantList out;
+    for (const Row &w : rows) {
+        auto [lemma, reading] = jp::splitKey(w.key);
+        out << QVariantMap{{"key", w.key}, {"lemma", lemma}, {"reading", reading}, {"status", statusName(Status(w.s))},
+                           {"manual", w.manual}, {"card", Words::instance().hasCard(w.key)}, {"time", w.t},
+                           {"rank", info.value(w.key).rank}, {"gloss", gloss.value(w.key)}};
+    }
+    QVariantMap counts;
+    const auto c = Words::instance().counts();
+    int all = 0;
+    for (auto it = c.begin(); it != c.end(); ++it) {
+        counts.insert(statusName(it.key()), it.value());
+        all += it.value();
+    }
+    counts.insert(QStringLiteral("all"), all);
+    return {{"rows", out}, {"total", total}, {"counts", counts}};
+}
+
 QString Togu::exportWordList(const QString &status) const
 {
     QStringList out;

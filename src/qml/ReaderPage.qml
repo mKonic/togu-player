@@ -14,7 +14,8 @@ FocusScope {
     property int hoverP: -1
     property int hoverT: -1
 
-    function open(path) { ready = false; reader.open(path); forceActiveFocus() }
+    function open(path) { ready = false; reader.open(path); clock.poke(); forceActiveFocus() }
+    TimeCredit { id: clock; kind: "book"; path: reader.path; active: rp.visible }
     function js(code) { view.runJavaScript(code) }
     function reload() { ready = false; view.loadHtml(reader.pageShell(), "file:///") }
 
@@ -64,6 +65,7 @@ FocusScope {
         onJavaScriptConsoleMessage: (level, message) => {
             if (!message.startsWith("togu:")) return
             const e = JSON.parse(message.slice(5))
+            if (e.type !== "leave") clock.poke()
             if (e.type === "hover" && Settings.lookupMode === "hover") rp.lookup(e)
             else if (e.type === "click") rp.lookup(e)
             else if (e.type === "blank") rp.closePopup()

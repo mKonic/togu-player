@@ -14,13 +14,17 @@ FocusScope {
     property var boxTokens: []
     property var stats: ({})
 
-    function open(path) { vol.open(path); forceActiveFocus() }
+    property string path: ""
+    function open(p) { path = p; vol.open(p); clock.poke(); forceActiveFocus() }
+    TimeCredit { id: clock; kind: "manga"; path: mp.path; active: mp.visible }
+    HoverHandler { onPointChanged: clock.poke() }
     function go(p) {
         const n = vol.pages.length
         page = Math.max(0, Math.min(n - 1, p))
         activeBox = null
         popup.visible = false
         vol.savePage(page)
+        clock.poke()
     }
     function next() { go(page + (spread ? 2 : 1)) }
     function prev() { go(page - (spread ? 2 : 1)) }
@@ -181,6 +185,7 @@ FocusScope {
     }
 
     Keys.onPressed: event => {
+        clock.poke()
         const target = popup.visible ? popup.targetKey : ""
         switch (event.key) {
         case Qt.Key_Left: case Qt.Key_Space: case Qt.Key_PageDown: case Qt.Key_A: mp.next(); break
