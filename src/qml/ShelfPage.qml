@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
 import QtQuick.Layouts
@@ -10,8 +11,8 @@ Item {
     property string kind: "book"
     property string filter: ""
     signal openItem(string path, int itemId)
-    readonly property var rootList: { Library.revision; return Library.roots(kind) }
-    readonly property var items: { Library.revision; return Library.shelf(kind, filter) }
+    readonly property var rootList: { const dep = Library.revision; return dep === undefined ? null : Library.roots(kind) }
+    readonly property var items: { const dep = Library.revision; return dep === undefined ? null : Library.shelf(kind, filter) }
     readonly property var recent: items.filter(i => i.lastRead && i.progress < 0.995).sort((a, b) => b.lastRead - a.lastRead).slice(0, 8)
     readonly property var groups: {
         const out = []
@@ -22,9 +23,16 @@ Item {
         return out
     }
 
-    FolderDialog { id: folderDialog; onAccepted: Library.addRoot(selectedFolder, shelf.kind) }
+    FolderDialog {
+        id: folderDialog
+        title: shelf.kind === "manga" ? qsTr("Add a manga folder") : qsTr("Add a book folder")
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
+        onAccepted: Library.addRoot(selectedFolder, shelf.kind)
+    }
     FileDialog {
         id: fileDialog
+        title: qsTr("Open a file")
+        currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation)
         nameFilters: shelf.kind === "manga" ? [qsTr("mokuro volumes (*.mokuro)")] : [qsTr("Books (*.epub *.txt)")]
         onAccepted: shelf.openItem(Togu.localPath(selectedFile), 0)
     }

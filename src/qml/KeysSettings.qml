@@ -56,7 +56,7 @@ ColumnLayout {
                 RowLayout {
                     id: row
                     required property var modelData
-                    readonly property var keys: { Settings.playerKeys; return KeyMap.keysFor(modelData.id) }
+                    readonly property var keys: { const dep = Settings.playerKeys; return dep === undefined ? null : KeyMap.keysFor(modelData.id) }
                     Layout.fillWidth: true
                     Layout.preferredHeight: 34
                     spacing: 6

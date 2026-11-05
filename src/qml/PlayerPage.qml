@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
 import QtQuick.Layouts
@@ -633,6 +634,8 @@ FocusScope {
         id: importDialog
         property bool secondary: false
         title: qsTr("Import subtitles")
+        // Next to the video, where subtitle files usually are.
+        currentFolder: session.path && !session.path.includes("://") ? Togu.fileUrl(session.path.substring(0, session.path.lastIndexOf("/"))) : StandardPaths.writableLocation(StandardPaths.DownloadLocation)
         nameFilters: [qsTr("Subtitles (*.ass *.ssa *.srt *.vtt *.lrc *.zip *.rar *.7z)"), qsTr("All files (*)")]
         onAccepted: session.importSubtitle(selectedFile, secondary)
     }

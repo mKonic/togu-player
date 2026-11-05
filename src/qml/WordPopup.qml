@@ -290,7 +290,7 @@ Rectangle {
                 ]
                 delegate: AbstractButton {
                     id: sb
-                    readonly property bool on: { pop.statusRev; return pop.targetKey !== "" && Togu.status(pop.targetKey) === modelData.st }
+                    readonly property bool on: { const dep = pop.statusRev; return dep === undefined ? null : pop.targetKey !== "" && Togu.status(pop.targetKey) === modelData.st }
                     implicitWidth: 34
                     implicitHeight: 34
                     hoverEnabled: true

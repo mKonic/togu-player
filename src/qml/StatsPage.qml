@@ -7,10 +7,10 @@ import Togu
 Item {
     id: sp
     property int days: 30
-    readonly property var daily: { Stats.revision; return Stats.daily(days) }
-    readonly property var topList: { Stats.revision; return Stats.topSeries(days, 8) }
-    readonly property var totals: { Stats.revision; return Stats.totals() }
-    readonly property var known: { Stats.revision; return Stats.knownHistory(days) }
+    readonly property var daily: { const dep = Stats.revision; return dep === undefined ? null : Stats.daily(days) }
+    readonly property var topList: { const dep = Stats.revision; return dep === undefined ? null : Stats.topSeries(days, 8) }
+    readonly property var totals: { const dep = Stats.revision; return dep === undefined ? null : Stats.totals() }
+    readonly property var known: { const dep = Stats.revision; return dep === undefined ? null : Stats.knownHistory(days) }
     // Chart purple: one step darker than Theme.purple in dark mode so bars sit inside the lightness band.
     readonly property color ink: Theme.dark ? "#a066ff" : "#672fc3"
 

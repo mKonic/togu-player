@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
 import QtQuick.Layouts
@@ -68,8 +69,8 @@ Item {
                 title: qsTr("Look")
                 SliderRow { label: qsTr("Size"); key: "subSize"; from: 20; to: 100; step: 1; suffix: " px" }
                 SliderRow { label: qsTr("Weight"); key: "subWeight"; from: 300; to: 900; step: 100 }
-                SliderRow { label: qsTr("Distance from the bottom"); key: "subBottom"; from: 0; to: 0.4; step: 0.01; scale: 100; suffix: "%" }
-                SliderRow { label: qsTr("Box behind lines"); key: "subBackground"; from: 0; to: 1; step: 0.05; scale: 100; suffix: "%" }
+                SliderRow { label: qsTr("Distance from the bottom"); key: "subBottom"; from: 0; to: 0.4; step: 0.01; valueScale: 100; suffix: "%" }
+                SliderRow { label: qsTr("Box behind lines"); key: "subBackground"; from: 0; to: 1; step: 0.05; valueScale: 100; suffix: "%" }
                 SwitchRow { label: qsTr("Outline"); key: "subOutline" }
                 SettingRow {
                     label: qsTr("Font")
@@ -117,7 +118,7 @@ Item {
             Section {
                 title: qsTr("Subtitle timing")
                 SwitchRow { label: qsTr("Auto-sync"); hint: qsTr("Line subtitles up with the speech the first time they're paired with a video. A manual adjustment pins that video until you sync again."); key: "autoSync" }
-                SliderRow { label: qsTr("Small step (Alt+I / Alt+O)"); key: "offsetStep"; from: 0.01; to: 0.5; step: 0.01; scale: 1000; suffix: " ms" }
+                SliderRow { label: qsTr("Small step (Alt+I / Alt+O)"); key: "offsetStep"; from: 0.01; to: 0.5; step: 0.01; valueScale: 1000; suffix: " ms" }
                 SliderRow { label: qsTr("Big step"); key: "offsetStepBig"; from: 0.1; to: 5; step: 0.1; decimals: 1; suffix: " s" }
             }
         }
@@ -179,6 +180,8 @@ Item {
             StarterDicts { visible: Togu.starterDicts.some(d => !d.installed) }
             FileDialog {
                 id: dictDialog
+                title: qsTr("Add dictionaries")
+                currentFolder: StandardPaths.writableLocation(StandardPaths.DownloadLocation)
                 fileMode: FileDialog.OpenFiles
                 nameFilters: [qsTr("Yomitan dictionaries (*.zip)")]
                 onAccepted: Togu.importDicts(selectedFiles)
@@ -209,8 +212,8 @@ Item {
                     TButton { small: true; quiet: true; tone: "plain"; iconName: "upload"; text: qsTr("Import…"); onClicked: importWords.open() }
                     TButton { small: true; quiet: true; tone: "plain"; iconName: "download"; text: qsTr("Export…"); onClicked: exportWords.open() }
                 }
-                FileDialog { id: importWords; nameFilters: [qsTr("Text (*.txt *.csv *.tsv)"), qsTr("All files (*)")]; onAccepted: Togu.importWordList(Togu.readTextFile(selectedFile), listStatus.currentValue) }
-                FileDialog { id: exportWords; fileMode: FileDialog.SaveFile; defaultSuffix: "txt"; onAccepted: Togu.writeTextFile(selectedFile, Togu.exportWordList(listStatus.currentValue)) }
+                FileDialog { id: importWords; title: qsTr("Import a word list"); currentFolder: StandardPaths.writableLocation(StandardPaths.DownloadLocation); nameFilters: [qsTr("Text (*.txt *.csv *.tsv)"), qsTr("All files (*)")]; onAccepted: Togu.importWordList(Togu.readTextFile(selectedFile), listStatus.currentValue) }
+                FileDialog { id: exportWords; title: qsTr("Export the word list"); currentFolder: StandardPaths.writableLocation(StandardPaths.DocumentsLocation); fileMode: FileDialog.SaveFile; defaultSuffix: "txt"; onAccepted: Togu.writeTextFile(selectedFile, Togu.exportWordList(listStatus.currentValue)) }
             }
             Section {
                 title: qsTr("About")

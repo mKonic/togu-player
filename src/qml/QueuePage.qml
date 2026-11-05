@@ -8,8 +8,8 @@ Item {
     id: qp
     property int rev: 0
     property string tab: "queue"
-    readonly property var queue: { rev; return Queue.list() }
-    readonly property var made: { rev; return Cards.history(100) }
+    readonly property var queue: { const dep = rev; return dep === undefined ? null : Queue.list() }
+    readonly property var made: { const dep = rev; return dep === undefined ? null : Cards.history(100) }
     Connections { target: Cards; function onAdded() { qp.rev++ } }
     Connections { target: Queue; function onChanged() { qp.rev++ } }
 

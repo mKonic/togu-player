@@ -9,7 +9,7 @@ SettingRow {
     property real step: 1
     property string suffix: ""
     property int decimals: 0
-    property real scale: 1
+    property real valueScale: 1 // shown value = setting × valueScale (e.g. 100 for %)
     Row {
         spacing: 10
         TSlider {
@@ -21,7 +21,7 @@ SettingRow {
         }
         Text {
             width: 64
-            text: (Settings[s.key] * s.scale).toFixed(s.decimals) + s.suffix
+            text: (Settings[s.key] * s.valueScale).toFixed(s.decimals) + s.suffix
             color: Theme.text2
             font.pixelSize: 13
             anchors.verticalCenter: parent.verticalCenter

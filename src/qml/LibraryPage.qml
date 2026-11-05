@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import QtQuick.Controls.Basic
 import QtQuick.Dialogs
 import QtQuick.Layouts
@@ -13,17 +14,20 @@ Item {
     property string filter: ""
     signal play(string path, int itemId)
 
-    readonly property var rootList: { Library.revision; return Library.roots(kind) }
-    readonly property var seriesList: { Library.revision; return Library.series(kind, sort, filter) }
-    readonly property var continueList: { Library.revision; return Library.continueItems(kind) }
+    readonly property var rootList: { const dep = Library.revision; return dep === undefined ? null : Library.roots(kind) }
+    readonly property var seriesList: { const dep = Library.revision; return dep === undefined ? null : Library.series(kind, sort, filter) }
+    readonly property var continueList: { const dep = Library.revision; return dep === undefined ? null : Library.continueItems(kind) }
 
     FolderDialog {
         id: folderDialog
         title: lib.kind === "audio" ? qsTr("Add an audio folder") : qsTr("Add a video folder")
+        currentFolder: StandardPaths.writableLocation(lib.kind === "audio" ? StandardPaths.MusicLocation : StandardPaths.MoviesLocation)
         onAccepted: Library.addRoot(selectedFolder, lib.kind)
     }
     FileDialog {
         id: fileDialog
+        title: qsTr("Open a file")
+        currentFolder: StandardPaths.writableLocation(lib.kind === "audio" ? StandardPaths.MusicLocation : StandardPaths.MoviesLocation)
         nameFilters: lib.kind === "audio" ? [qsTr("Audio (*.mp3 *.m4a *.m4b *.flac *.ogg *.opus *.wav *.aac)")] : [qsTr("Video (*.mkv *.mp4 *.webm *.avi *.mov *.m4v *.ts)")]
         onAccepted: lib.play(Togu.localPath(selectedFile), 0)
     }
@@ -101,7 +105,7 @@ Item {
                     TButton { quiet: true; tone: "plain"; iconName: "folder"; text: qsTr("Open a single file…"); onClicked: fileDialog.open() }
                 }
             }
-            StarterDicts { visible: Togu.dicts.length === 0 && !Togu.dictBusy }
+            StarterDicts { id: starter; visible: (Togu.dicts.length === 0 && !Togu.dictBusy) || starter.running }
 
             // Continue
             ColumnLayout {

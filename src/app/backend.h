@@ -74,6 +74,7 @@ signals:
     void toast(const QString &text, const QString &tone);
 
 private:
+    void runImport(const QStringList &paths, double base, double span, bool removeAfter);
     explicit Togu(QObject *parent = nullptr);
     class QNetworkAccessManager *m_net = nullptr;
     bool m_dictBusy = false;

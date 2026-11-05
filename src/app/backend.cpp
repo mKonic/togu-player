@@ -186,15 +186,21 @@ void Togu::importDicts(const QList<QUrl> &files)
 {
     if (m_dictBusy || files.isEmpty()) return;
     m_dictBusy = true;
-    m_dictFraction = 0;
-    m_dictProgress = tr("Starting…");
-    emit dictProgressChanged();
     QStringList paths;
     for (const QUrl &u : files) paths << (u.isLocalFile() ? u.toLocalFile() : u.toString());
-    (void)QtConcurrent::run([this, paths] {
+    runImport(paths, 0, 1, false);
+}
+
+// Imports with m_dictBusy already set. The bar covers [base, base + span]; downloads use the first half.
+void Togu::runImport(const QStringList &paths, double base, double span, bool removeAfter)
+{
+    m_dictFraction = base;
+    m_dictProgress = tr("Starting…");
+    emit dictProgressChanged();
+    (void)QtConcurrent::run([this, paths, base, span, removeAfter] {
         for (qsizetype i = 0; i < paths.size(); ++i) {
             QString res = Dict::instance().import(paths[i], [&](const Dict::Progress &p) {
-                const double frac = (i + (p.total ? double(p.done) / p.total : 0)) / paths.size();
+                const double frac = base + span * (i + (p.total ? double(p.done) / p.total : 0)) / paths.size();
                 const QString text = QStringLiteral("%1 — %2").arg(p.title, p.phase);
                 QMetaObject::invokeMethod(this, [this, frac, text] {
                     m_dictFraction = frac;
@@ -203,6 +209,7 @@ void Togu::importDicts(const QList<QUrl> &files)
                 });
             });
             const bool err = res.startsWith(u"error:");
+            if (removeAfter) QFile::remove(paths[i]); // a downloaded zip isn't needed once imported
             QMetaObject::invokeMethod(this, [this, res, err, path = paths[i]] {
                 emit dictImported(err ? QFileInfo(path).fileName() : res, err ? res.mid(6) : QString());
                 emit dictsChanged();
@@ -247,9 +254,15 @@ void Togu::downloadDicts(const QStringList &ids)
     auto next = std::make_shared<std::function<void()>>();
     *next = [this, queue, files, total, dir, next] {
         if (queue->isEmpty()) {
-            m_dictBusy = false;
-            emit dictProgressChanged();
-            importDicts(*files);
+            QStringList paths;
+            for (const QUrl &u : *files) paths << u.toLocalFile();
+            if (paths.isEmpty()) {
+                m_dictBusy = false;
+                m_dictProgress.clear();
+                emit dictProgressChanged();
+            } else {
+                runImport(paths, 0.5, 0.5, true);
+            }
             return;
         }
         const Starter *st = queue->takeFirst();

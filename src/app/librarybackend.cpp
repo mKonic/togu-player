@@ -9,6 +9,7 @@
 #include "core/words/words.h"
 #include "settings.h"
 
+#include <QCollator>
 #include <QDir>
 #include <QFile>
 #include "core/media/cut.h"
@@ -236,8 +237,37 @@ QVariantList Library::items(int seriesId) const
                   .arg(QLatin1String(ITEM_COLS)));
     q.addBindValue(seriesId);
     db::exec(q);
+    // Subfolders of the series folder are groups (Season 1, Specials, ...), named after the folder.
+    QSqlQuery r(db::app());
+    r.prepare(QStringLiteral("SELECT r.path, s.folder FROM series s JOIN roots r ON r.id=s.root WHERE s.id=?"));
+    r.addBindValue(seriesId);
+    QString base;
+    if (db::exec(r) && r.next() && !r.value(1).toString().isEmpty())
+        base = QDir::cleanPath(r.value(0).toString() + u'/' + r.value(1).toString()) + u'/';
+    QList<QVariantMap> loose;
+    QMap<QString, QList<QVariantMap>> groups;
+    while (q.next()) {
+        QVariantMap m = itemRow(q);
+        const QString path = m.value("path").toString();
+        QString group;
+        if (!base.isEmpty() && path.startsWith(base)) {
+            const QString rel = path.mid(base.size());
+            if (rel.contains(u'/')) group = rel.section(u'/', 0, -2).replace(u'/', QStringLiteral(" / "));
+        }
+        m.insert("group", group);
+        if (group.isEmpty()) loose << m;
+        else groups[group] << m;
+    }
+    // Loose files first, then groups in natural order (Season 2 before Season 10).
+    QStringList names = groups.keys();
+    QCollator collator;
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::sort(names.begin(), names.end(), [&](const QString &a, const QString &b) { return collator.compare(a, b) < 0; });
     QVariantList out;
-    while (q.next()) out << itemRow(q);
+    for (const QVariantMap &m : loose) out << m;
+    for (const QString &n : names)
+        for (const QVariantMap &m : groups[n]) out << m;
     return out;
 }
 

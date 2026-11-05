@@ -12,7 +12,7 @@ Item {
     property int rev: 0
     property var selected: ({})     // key -> true
     readonly property int selectedCount: Object.keys(selected).length
-    readonly property var result: { rev; return Togu.wordList(status, query, sort, 500) }
+    readonly property var result: { const dep = rev; return dep === undefined ? null : Togu.wordList(status, query, sort, 500) }
     Connections { target: Togu; function onStatusesChanged() { wp.rev++ } }
     Timer { id: searchDelay; interval: 200; onTriggered: wp.query = search.text }
 

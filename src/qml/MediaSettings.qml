@@ -1,4 +1,5 @@
 import QtQuick
+import QtCore
 import QtQuick.Dialogs
 import QtQuick.Layouts
 import Togu
@@ -28,6 +29,6 @@ ColumnLayout {
             TField { Layout.fillWidth: true; text: Settings.wordAudioDir; placeholderText: qsTr("Found automatically"); onEditingFinished: Settings.set("wordAudioDir", text.trim()) }
             TButton { small: true; quiet: true; tone: "plain"; iconName: "folder"; text: qsTr("Choose…"); onClicked: audioDir.open() }
         }
-        FolderDialog { id: audioDir; onAccepted: Settings.set("wordAudioDir", Togu.localPath(selectedFolder)) }
+        FolderDialog { id: audioDir; title: qsTr("Word audio folder"); currentFolder: StandardPaths.writableLocation(StandardPaths.HomeLocation); onAccepted: Settings.set("wordAudioDir", Togu.localPath(selectedFolder)) }
     }
 }
