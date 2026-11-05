@@ -279,8 +279,24 @@ Popup {
         Text { id: errorText; visible: text !== ""; color: Theme.pink; font.pixelSize: 13; Layout.fillWidth: true; wrapMode: Text.Wrap }
         RowLayout {
             spacing: 10
+            // Why a card can't be added yet, before the user tries.
+            readonly property string blocker: !Cards.connected ? qsTr("Anki isn't reachable. Open Anki with the AnkiConnect add-on.")
+                                              : !Settings.ankiDeck || !Settings.ankiModel ? qsTr("Choose a deck and note type in Settings → Anki.") : ""
             Text {
-                visible: cc.confirmEmpty
+                visible: parent.blocker !== ""
+                text: parent.blocker
+                color: Theme.orange; font.pixelSize: 13
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
+            }
+            TButton {
+                visible: !Cards.connected
+                small: true; quiet: true; tone: "plain"; iconName: "refresh"
+                text: qsTr("Check again")
+                onClicked: Cards.refresh()
+            }
+            Text {
+                visible: cc.confirmEmpty && parent.blocker === ""
                 text: qsTr("This card has no word, only the sentence. Add it anyway?")
                 color: Theme.orange; font.pixelSize: 13
             }
@@ -288,7 +304,7 @@ Popup {
             TButton {
                 quiet: true; tone: "plain"; iconName: "layers"
                 text: qsTr("Add media to last card")
-                enabled: !Cards.busy
+                enabled: !Cards.busy && Cards.connected
                 onClicked: Cards.addMediaToLast(cc.d)
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Puts this audio and picture on the newest note in Anki, e.g. one Yomitan just made")
@@ -296,7 +312,7 @@ Popup {
             TButton {
                 iconName: "cardAdd"
                 text: cc.confirmEmpty ? qsTr("Add anyway") : qsTr("Add card")
-                enabled: !Cards.busy && !cc.isEmpty()
+                enabled: !Cards.busy && !cc.isEmpty() && parent.blocker === ""
                 onClicked: cc.submit(cc.confirmEmpty)
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Ctrl+Enter")

@@ -17,6 +17,7 @@ Button {
     readonly property color base: tone === "plain" ? Theme.text : Theme.toneColor(tone)
     contentItem: Row {
         spacing: 7
+        opacity: b.enabled ? 1 : 0.45
         Icon {
             visible: b.iconName !== ""
             name: b.iconName

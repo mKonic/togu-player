@@ -10,6 +10,7 @@ AbstractButton {
     property real size: 40
     property real iconSize: size * 0.5
     property bool active: false
+    opacity: enabled ? 1 : 0.4
     implicitWidth: size
     implicitHeight: size
     hoverEnabled: true
