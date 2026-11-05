@@ -21,6 +21,9 @@ QString videoClip(const QString &path, double start, double end, int height, int
 QString condensedAudio(const QString &path, const QList<std::pair<double, double>> &spans, int audioTrack,
                        const QString &format, const QString &outPath, double padding = 0.2);
 
+// Cover art embedded in an audio file (or a frame of a video), cached; empty when none.
+QString coverArt(const QString &path);
+
 QString mediaCacheDir();
 
 } // namespace media

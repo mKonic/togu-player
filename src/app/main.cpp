@@ -14,6 +14,7 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSurfaceFormat>
+#include <QtWebEngineQuick/qtwebenginequickglobal.h>
 
 #include <clocale>
 
@@ -40,6 +41,8 @@ int main(int argc, char *argv[])
     fmt.setSwapInterval(1);
     QSurfaceFormat::setDefaultFormat(fmt);
 
+    // The reader's web view needs this before the application exists.
+    QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("togu-player"));
     app.setApplicationDisplayName(QStringLiteral("Togu"));

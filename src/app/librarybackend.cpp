@@ -10,6 +10,10 @@
 #include "settings.h"
 
 #include <QDir>
+#include <QFile>
+#include "core/media/cut.h"
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QFileInfo>
 #include <QImage>
 #include <QProcess>
@@ -88,7 +92,7 @@ void Library::addRoot(const QUrl &folder, const QString &kind)
     const int id = library::addRoot(p, kind);
     updateWatches();
     bump();
-    if (kind == u"video" || kind == u"audio") runPipeline(id);
+    runPipeline(id);
 }
 
 void Library::removeRoot(int id)
@@ -116,8 +120,9 @@ void Library::runPipeline(int rootId)
     m_pool.start([this, rootId, meta, tmdb, status] {
         for (const auto &r : library::roots()) {
             if (m_cancel) break;
-            if ((r.kind != u"video" && r.kind != u"audio") || (rootId && r.id != rootId)) continue;
-            library::scan(r, &m_cancel);
+            if (rootId && r.id != rootId) continue;
+            if (r.kind == u"video" || r.kind == u"audio") library::scan(r, &m_cancel);
+            else library::scanReading(r, &m_cancel);
         }
         QMetaObject::invokeMethod(this, [this] { bump(); });
         if (meta) {
@@ -317,6 +322,33 @@ QVariantList Library::linesWithWord(const QString &key, int limit) const
     return out;
 }
 
+QVariantList Library::shelf(const QString &kind, const QString &filter) const
+{
+    QVariantList out;
+    QSqlQuery q(db::app());
+    q.prepare(QStringLiteral("SELECT i.id, i.path, i.title, i.extra, s.id, s.title, p.pos, p.time FROM items i JOIN series s ON s.id=i.series"
+                             " LEFT JOIN positions p ON p.path=i.path WHERE i.kind=? AND (?='' OR i.title LIKE ? OR s.title LIKE ?)"
+                             " ORDER BY s.title COLLATE NOCASE, i.title COLLATE NOCASE"));
+    const QString like = u'%' + filter + u'%';
+    q.addBindValue(kind);
+    q.addBindValue(filter);
+    q.addBindValue(like);
+    q.addBindValue(like);
+    db::exec(q);
+    while (q.next()) {
+        const QJsonObject extra = QJsonDocument::fromJson(q.value(3).toByteArray()).object();
+        const QJsonObject pos = QJsonDocument::fromJson(q.value(6).toByteArray()).object();
+        double progress = 0;
+        if (pos.contains("page")) progress = (pos.value("page").toDouble() + 1) / std::max(1, pos.value("pages").toInt(1));
+        else if (pos.contains("chapter"))
+            progress = (pos.value("chapter").toDouble() + pos.value("fraction").toDouble()) / std::max(1, pos.value("chapters").toInt(1));
+        out << QVariantMap{{"id", q.value(0)}, {"path", q.value(1)}, {"title", q.value(2)}, {"author", extra.value("author").toString()},
+                           {"cover", fileUrl(extra.value("cover").toString())}, {"series", q.value(4)}, {"seriesTitle", q.value(5)},
+                           {"progress", std::min(1.0, progress)}, {"lastRead", q.value(7)}};
+    }
+    return out;
+}
+
 void Library::searchMeta(int seriesId, const QString &query)
 {
     const QString tmdb = Settings::v("tmdbKey").toString();
@@ -373,7 +405,10 @@ QImage ThumbProvider::requestImage(const QString &id, QSize *size, const QSize &
         QSqlQuery q(db::app());
         q.prepare(QStringLiteral("SELECT path, duration, kind FROM items WHERE id=?"));
         q.addBindValue(itemId);
-        if (db::exec(q) && q.next() && q.value(2).toString() == u"video") {
+        if (db::exec(q) && q.next() && q.value(2).toString() == u"audio") {
+            const QString cover = media::coverArt(q.value(0).toString());
+            if (!cover.isEmpty()) QFile::copy(cover, out);
+        } else if (q.isValid() && q.value(2).toString() == u"video") {
             const QString path = q.value(0).toString();
             double dur = q.value(1).toDouble();
             if (dur <= 0) dur = media::probe(path).duration;

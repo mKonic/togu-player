@@ -385,6 +385,26 @@ FocusScope {
                 Layout.rightMargin: 6
             }
             IconButton {
+                id: chapterBtn
+                visible: mpv.chapters.length > 1
+                iconName: "list"
+                color: "white"
+                tip: qsTr("Chapters")
+                onClicked: chapterMenu.popup(chapterBtn, 0, -chapterMenu.implicitHeight)
+                TMenu {
+                    id: chapterMenu
+                    Repeater {
+                        model: mpv.chapters
+                        MenuItem {
+                            text: (modelData.title || qsTr("Chapter %1").arg(index + 1)) + "  ·  " + Togu.formatTime(modelData.time)
+                            checkable: true
+                            checked: mpv.position >= modelData.time && (index + 1 >= mpv.chapters.length || mpv.position < mpv.chapters[index + 1].time)
+                            onTriggered: mpv.seek(modelData.time)
+                        }
+                    }
+                }
+            }
+            IconButton {
                 id: speedBtn
                 iconName: "speed"; color: "white"; tip: qsTr("Speed: %1×").arg(mpv.speed.toFixed(2))
                 onClicked: speedMenu.popup(speedBtn, 0, -speedMenu.implicitHeight)

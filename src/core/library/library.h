@@ -26,6 +26,9 @@ struct ScanResult {
 // Walks a root and brings series and items up to date. Safe to run on a worker thread.
 ScanResult scan(const Root &root, const std::atomic_bool *cancel = nullptr);
 
+// Books (EPUB/TXT) and mokuro manga: one item per book or volume, grouped by top folder.
+ScanResult scanReading(const Root &root, const std::atomic_bool *cancel = nullptr);
+
 // Subtitle index: lines of the item's Japanese subtitle, tokenized. Returns lines indexed.
 int indexItem(int itemId);
 // Items whose subtitles are not indexed yet (or changed).

@@ -48,6 +48,19 @@ QStringList audioCodec(const QString &format)
 
 } // namespace
 
+QString coverArt(const QString &path)
+{
+    const QString dir = db::cacheDir() + QStringLiteral("/covers");
+    QDir().mkpath(dir);
+    const QFileInfo fi(path);
+    const QString out = dir + u'/' + QString::number(qHash(path + QString::number(fi.size()))) + QStringLiteral(".jpg");
+    if (QFileInfo(out).size() > 0) return out;
+    // Audio files keep their cover as an attached-picture video stream.
+    if (run({"-i", path, "-an", "-map", "0:v:0", "-frames:v", "1", "-vf", "scale='min(800,iw)':-2", out}, 30000) && QFileInfo(out).size() > 0) return out;
+    QFile::remove(out);
+    return {};
+}
+
 QString cutAudio(const AudioCut &c)
 {
     const QString ext = c.format == u"opus" ? QStringLiteral("ogg") : QStringLiteral("mp3");

@@ -22,6 +22,16 @@ ApplicationWindow {
         player.visible = true
         player.open(path, itemId)
     }
+    function openBook(path) {
+        readerLoader.active = true
+        readerLoader.item.visible = true
+        readerLoader.item.open(path)
+    }
+    function openManga(path) {
+        mangaLoader.active = true
+        mangaLoader.item.visible = true
+        mangaLoader.item.open(path)
+    }
     function closePlayer() {
         player.session.close()
         player.mpv.stop()
@@ -38,7 +48,7 @@ ApplicationWindow {
     RowLayout {
         anchors.fill: parent
         spacing: 0
-        visible: !player.visible
+        visible: !player.visible && !(readerLoader.item && readerLoader.item.visible) && !(mangaLoader.item && mangaLoader.item.visible)
         NavRail {
             Layout.fillHeight: true
             current: win.page
@@ -53,8 +63,8 @@ ApplicationWindow {
     }
 
     Component { id: libraryPage; LibraryPage { kind: win.page === "listen" ? "audio" : "video"; onPlay: (path, id) => win.playFile(path, id) } }
-    Component { id: readPage; ReaderLibrary {} }
-    Component { id: mangaPage; MangaLibrary {} }
+    Component { id: readPage; ShelfPage { kind: "book"; onOpenItem: (path, id) => win.openBook(path) } }
+    Component { id: mangaPage; ShelfPage { kind: "manga"; onOpenItem: (path, id) => win.openManga(path) } }
     Component { id: wordsPage; WordsPage {} }
     Component { id: statsPage; StatsPage {} }
     Component { id: queuePage; QueuePage {} }
@@ -70,6 +80,28 @@ ApplicationWindow {
             else { win.showFullScreen(); player.fullscreen = true }
         }
         onCardRequested: (entry, line, surface) => cardCreator.openFor(entry, line, surface, player.session, player.mpv)
+    }
+
+    // The reader loads its web engine only when a book is opened.
+    Loader {
+        id: readerLoader
+        anchors.fill: parent
+        active: false
+        sourceComponent: ReaderPage {
+            visible: false
+            onCloseRequested: { visible = false; readerLoader.active = false }
+            onCardRequested: (entry, line, surface) => cardCreator.openFor(entry, line, surface, null, null)
+        }
+    }
+    Loader {
+        id: mangaLoader
+        anchors.fill: parent
+        active: false
+        sourceComponent: MangaPage {
+            visible: false
+            onCloseRequested: { visible = false; mangaLoader.active = false }
+            onCardRequested: (entry, line, surface, image) => cardCreator.openFor(entry, line, surface, null, null, image)
+        }
     }
 
     CardCreator { id: cardCreator; anchors.centerIn: parent }
@@ -109,6 +141,8 @@ ApplicationWindow {
             const p = Togu.localPath(drop.urls[0])
             if (/\.(ass|ssa|srt|vtt|lrc|rar|7z|zip)$/i.test(p) && player.visible) player.session.importSubtitle(drop.urls[0], false)
             else if (/\.zip$/i.test(p)) Togu.importDicts(drop.urls)
+            else if (/\.(epub|txt)$/i.test(p)) win.openBook(p)
+            else if (/\.mokuro$/i.test(p)) win.openManga(p)
             else win.playFile(p, 0)
         }
     }

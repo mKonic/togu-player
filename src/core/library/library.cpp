@@ -8,6 +8,11 @@
 #include "core/words/stats.h"
 #include "core/words/words.h"
 #include "names.h"
+#include "core/book/book.h"
+#include "core/manga/mokuro.h"
+
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include <QDateTime>
 #include <QDir>
@@ -125,7 +130,7 @@ ScanResult scan(const Root &root, const std::atomic_bool *cancel)
         } else {
             // Loose files: grouped by the title in their names.
             f.seriesTitle = f.parsed.title.isEmpty() ? fi.completeBaseName() : f.parsed.title;
-            f.seriesFolder = QString();
+            f.seriesFolder = QStringLiteral(""); // not null: the column is NOT NULL
         }
         if (f.seriesTitle.isEmpty()) f.seriesTitle = fi.completeBaseName();
         found.append(f);
@@ -178,6 +183,81 @@ ScanResult scan(const Root &root, const std::atomic_bool *cancel)
         db::exec(d, QStringLiteral("DELETE FROM lines WHERE item=?"), {id});
         db::exec(d, QStringLiteral("DELETE FROM items WHERE id=?"), {id});
     }
+    r.removed = int(gone.size());
+    db::exec(d, QStringLiteral("DELETE FROM series WHERE root=? AND id NOT IN (SELECT DISTINCT series FROM items WHERE series IS NOT NULL)"), {root.id});
+    tx.commit();
+    return r;
+}
+
+ScanResult scanReading(const Root &root, const std::atomic_bool *cancel)
+{
+    ScanResult r;
+    const QDir base(root.path);
+    if (!base.exists()) return r;
+    const bool manga = root.kind == u"manga";
+    QStringList found;
+    if (manga) found = mokuro::findVolumes(root.path);
+    else {
+        QDirIterator it(root.path, QDir::Files, QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
+        while (it.hasNext()) {
+            const QString p = it.next();
+            if (book::isBook(p)) found << p;
+        }
+    }
+    auto d = db::app();
+    db::Tx tx(d);
+    QHash<QString, int> seriesIds;
+    QSet<QString> paths;
+    for (const QString &p : found) {
+        if (cancel && *cancel) return r;
+        paths.insert(p);
+        QString rel = base.relativeFilePath(p);
+        // Old mokuro layout: <series>/_ocr/<volume>; the series is the folder above _ocr.
+        QStringList parts = rel.split(u'/');
+        parts.removeLast();
+        parts.removeAll(QStringLiteral("_ocr"));
+        const QString folder = parts.isEmpty() ? QStringLiteral("") : parts.first(); // "" not null for the NOT NULL column
+        const QString key = folder.isEmpty() ? QStringLiteral("\x01") : folder;
+        int sid = seriesIds.value(key);
+        if (!sid) {
+            const QString title = folder.isEmpty() ? (manga ? QObject::tr("Manga") : QObject::tr("Books")) : names::cleanTitle(folder);
+            sid = db::scalar(d, QStringLiteral("SELECT id FROM series WHERE root=? AND folder=?"), {root.id, folder}).toInt();
+            if (!sid) {
+                db::exec(d, QStringLiteral("INSERT INTO series (root, kind, title, folder, meta_id) VALUES (?,?,?,?,'none')"), {root.id, root.kind, title, folder});
+                sid = db::scalar(d, QStringLiteral("SELECT last_insert_rowid()")).toInt();
+                ++r.series;
+            }
+            seriesIds.insert(key, sid);
+        }
+        if (db::scalar(d, QStringLiteral("SELECT id FROM items WHERE path=?"), {p}).isValid()) continue;
+        QString title, cover;
+        QJsonObject extra;
+        if (manga) {
+            title = QFileInfo(p).completeBaseName();
+            cover = mokuro::cover(p);
+        } else {
+            const book::Book info = book::info(p);
+            title = info.title;
+            cover = info.cover;
+            extra.insert("author", info.author);
+        }
+        extra.insert("cover", cover);
+        const names::Parsed np = names::parse(QFileInfo(p).fileName());
+        db::exec(d, QStringLiteral("INSERT INTO items (series, path, kind, title, episode, size, mtime, extra) VALUES (?,?,?,?,?,?,?,?)"),
+                 {sid, p, root.kind, title, np.episode >= 0 ? QVariant(np.episode) : QVariant(), QFileInfo(p).size(),
+                  QFileInfo(p).lastModified().toSecsSinceEpoch(), QString::fromUtf8(QJsonDocument(extra).toJson(QJsonDocument::Compact))});
+        // The first volume's cover stands for the series.
+        db::exec(d, QStringLiteral("UPDATE series SET poster=COALESCE(poster, ?) WHERE id=?"), {cover.isEmpty() ? QVariant() : QVariant(cover), sid});
+        ++r.added;
+    }
+    QSqlQuery q(d);
+    q.prepare(QStringLiteral("SELECT i.id, i.path FROM items i JOIN series s ON s.id=i.series WHERE s.root=?"));
+    q.addBindValue(root.id);
+    db::exec(q);
+    QList<int> gone;
+    while (q.next())
+        if (!paths.contains(q.value(1).toString())) gone << q.value(0).toInt();
+    for (int id : gone) db::exec(d, QStringLiteral("DELETE FROM items WHERE id=?"), {id});
     r.removed = int(gone.size());
     db::exec(d, QStringLiteral("DELETE FROM series WHERE root=? AND id NOT IN (SELECT DISTINCT series FROM items WHERE series IS NOT NULL)"), {root.id});
     tx.commit();

@@ -258,11 +258,23 @@ QVariantMap Cards::draft(const QVariant &entryV, const QVariantMap &line, const 
         d.insert("path", q.value(3));
         d.insert("kind", q.value(4));
     }
-    const qint64 t = qint64(line.value("start").toDouble());
-    source += QStringLiteral(" · %1:%2").arg(t / 60).arg(t % 60, 2, 10, QChar(u'0'));
+    if (line.contains("book")) {
+        source = line.value("book").toString();
+        d.insert("kind", QStringLiteral("book"));
+        d.remove("path");
+    } else {
+        const qint64 t = qint64(line.value("start").toDouble());
+        source += QStringLiteral(" · %1:%2").arg(t / 60).arg(t % 60, 2, 10, QChar(u'0'));
+    }
     d.insert("source", source);
     d.insert("itemId", itemId);
     d.insert("images", QVariantList());
+    if (d.value("kind").toString() == u"audio") {
+        // Audio has no frame to cut: the cover stands in as the card picture.
+        QString cover = db::scalar(db::app(), QStringLiteral("SELECT COALESCE(s.meta_poster, s.poster) FROM items i JOIN series s ON s.id=i.series WHERE i.id=?"), {itemId}).toString();
+        if (cover.isEmpty()) cover = media::coverArt(d.value("path").toString());
+        if (!cover.isEmpty()) d.insert("images", QVariantList{cover});
+    }
     d.insert("sentenceAudio", QString());
     const auto clips = wordaudio::find(wordaudio::collectionDir(Settings::v("wordAudioDir").toString()),
                                        entry.value("expression").toString(), entry.value("reading").toString());

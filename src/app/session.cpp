@@ -180,6 +180,10 @@ void PlaybackSession::open(const QString &pathOrUrl, int itemId)
         const QString poster = q.value(7).toString();
         m_cover = poster.isEmpty() ? QString() : (poster.contains(u"://") ? poster : QUrl::fromLocalFile(poster).toString());
     }
+    if (m_cover.isEmpty() && m_kind == u"audio") {
+        // The file's own cover art, via the thumbnail provider.
+        m_cover = QStringLiteral("image://thumb/%1").arg(m_itemId);
+    }
     db::exec(d, QStringLiteral("UPDATE items SET last_played=? WHERE id=?"), {QDateTime::currentSecsSinceEpoch(), m_itemId});
     emit opened();
     emit offsetChanged();
@@ -461,7 +465,9 @@ void PlaybackSession::loadPrimary(const Source &src, bool restoring)
         saveItem();
         if (!subs::looksJapanese(r.lines))
             emit toast(tr("This subtitle doesn't look Japanese. Pick another one from the subtitle menu."), QStringLiteral("orange"));
-        if (Settings::v("autoSync").toBool() && !m_pinned && !m_synced) startAutoSync(false);
+        // LRC lines run into each other, so there are no gaps to line up with speech.
+        const bool lrc = id.endsWith(u".lrc", Qt::CaseInsensitive);
+        if (Settings::v("autoSync").toBool() && !m_pinned && !m_synced && !lrc) startAutoSync(false);
     });
     w->setFuture(QtConcurrent::run([m = m_path, p = src.path, s = src.stream, t = src.kind == u"track"] { return loadSource(m, p, s, t, true); }));
 }
@@ -751,8 +757,10 @@ void PlaybackSession::startAutoSync(bool manual)
         const double change = r.offset - m_offset;
         auto fmt = [](double v) { return QStringLiteral("%1%2 s").arg(v >= 0 ? "+" : "").arg(v, 0, 'f', 2); };
         if (r.confidence <= 0.05) {
-            m_syncState = QStringLiteral("failed");
-            m_syncMessage = tr("Couldn't find the speech to line the subtitles up with.");
+            // Said only when asked; an automatic check that finds nothing stays quiet.
+            m_syncState = manual ? QStringLiteral("failed") : QString();
+            m_syncMessage = manual ? tr("Couldn't find the speech to line the subtitles up with.") : QString();
+            m_synced = true;
         } else if (r.split < 0 && std::abs(change) < 0.1 && r.ok()) {
             m_syncState = QStringLiteral("inSync");
             m_syncMessage = tr("Subtitles are in sync");
@@ -773,7 +781,6 @@ void PlaybackSession::startAutoSync(bool manual)
                 ? tr("Timing changes at line %1: %2, then %3. Apply?").arg(r.split + 1).arg(fmt(r.offset), fmt(r.offset2))
                 : tr("Subtitles may be %1 off. Apply?").arg(fmt(change));
         }
-        Q_UNUSED(manual)
         saveItem();
         emit syncChanged();
     });

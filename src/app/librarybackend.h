@@ -47,6 +47,8 @@ public:
     Q_INVOKABLE void setWatched(int itemId, bool watched);
     Q_INVOKABLE void setSeriesWatched(int seriesId, bool watched);
     Q_INVOKABLE QVariantList linesWithWord(const QString &key, int limit = 30) const;
+    // Books or manga volumes with cover and reading progress, grouped by series.
+    Q_INVOKABLE QVariantList shelf(const QString &kind, const QString &filter = {}) const;
 
     Q_INVOKABLE void searchMeta(int seriesId, const QString &query);
     Q_INVOKABLE void applyMeta(int seriesId, const QVariantMap &candidate);

@@ -19,18 +19,21 @@ Popup {
     property double padStart: 0
     property double padEnd: 0
 
-    function openFor(entry, line, surface, s, player) {
+    // `image`: a picture already made (a manga panel), used instead of cutting one.
+    function openFor(entry, line, surface, s, player, image) {
         if (!line || line.start === undefined) { Togu.toast(qsTr("No subtitle line here to make a card from."), "orange"); return }
         session = s
         mpv = player
         if (mpv) mpv.paused = true
         const draft = Cards.draft(entry || {}, line, surface || "", s ? s.itemId : 0, s ? s.offset : 0)
+        if (image) draft.images = [image]
         d = draft
         wordAudios = draft.expression ? Cards.wordAudio(draft.expression, draft.reading) : []
         padStart = 0; padEnd = 0
         confirmEmpty = false
         open()
-        recut()
+        recutAudio()
+        if (!image) recutImage()
     }
     function set(k, v) { const n = Object.assign({}, d); n[k] = v; d = n }
     function audioTrack() { return mpv && mpv.audioTrack > 0 ? mpv.audioTrack - 1 : -1 }
@@ -40,7 +43,7 @@ Popup {
         audioToken = Cards.cutAudio(d.path, d.start + padStart, d.end + padEnd, audioTrack())
     }
     function recutImage() {
-        if (!d.path || d.kind === "audio") return
+        if (!d.path || d.kind === "audio" || d.kind === "book") return
         set("images", [])
         imageToken = Cards.cutImage(d.path, d.start + padStart, d.end + padEnd, imageMode, mpv && mpv.paused ? mpv.position : -1)
     }
