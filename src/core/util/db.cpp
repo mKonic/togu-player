@@ -67,7 +67,7 @@ const char *APP_SCHEMA[] = {
     "CREATE TABLE IF NOT EXISTS immersion (day TEXT NOT NULL, item INTEGER, series INTEGER, kind TEXT NOT NULL,"
     " seconds REAL NOT NULL DEFAULT 0, PRIMARY KEY(day, item, kind))",
     // Daily snapshot of known-word counts for the progress chart.
-    "CREATE TABLE IF NOT EXISTS known_history (day TEXT PRIMARY KEY, known INTEGER, learning INTEGER)",
+    "CREATE TABLE IF NOT EXISTS known_history (day TEXT PRIMARY KEY, known INTEGER, learning INTEGER, comprehension REAL)",
     // Anki card state cache for status sync.
     "CREATE TABLE IF NOT EXISTS anki_cards (card INTEGER PRIMARY KEY, note INTEGER, word TEXT, mod INTEGER,"
     " status INTEGER, strength REAL, lapses INTEGER, type TEXT, queue TEXT)",

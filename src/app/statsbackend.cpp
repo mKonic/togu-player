@@ -2,6 +2,7 @@
 
 #include "core/util/db.h"
 #include "core/words/words.h"
+#include "librarybackend.h"
 #include "settings.h"
 
 #include <QDate>
@@ -28,13 +29,17 @@ Stats::Stats(QObject *parent) : QObject(parent)
     t->setInterval(5000);
     connect(t, &QTimer::timeout, this, [this] { snapshotWords(); });
     connect(&Words::instance(), &Words::changed, t, qOverload<>(&QTimer::start));
+    // Comprehension changes after the library rescores.
+    connect(Library::instance(), &Library::changed, t, qOverload<>(&QTimer::start));
 }
 
 void Stats::snapshotWords()
 {
     const auto c = Words::instance().counts();
-    db::exec(db::app(), QStringLiteral("INSERT OR REPLACE INTO known_history (day, known, learning) VALUES (?,?,?)"),
-             {QDate::currentDate().toString(Qt::ISODate), c.value(Status::Known), c.value(Status::Learning)});
+    // Library comprehension: every scored item, weighted by its word count.
+    const QVariant comp = db::scalar(db::app(), QStringLiteral("SELECT SUM(comprehension*words)*1.0/SUM(words) FROM items WHERE comprehension IS NOT NULL AND words>0"));
+    db::exec(db::app(), QStringLiteral("INSERT OR REPLACE INTO known_history (day, known, learning, comprehension) VALUES (?,?,?,?)"),
+             {QDate::currentDate().toString(Qt::ISODate), c.value(Status::Known), c.value(Status::Learning), comp});
     ++m_rev;
     emit changed();
 }
@@ -111,12 +116,13 @@ QVariantList Stats::knownHistory(int days) const
 {
     QVariantList out;
     QSqlQuery q(db::app());
-    q.prepare(QStringLiteral("SELECT day, known, learning FROM known_history WHERE day>=? ORDER BY day"));
+    q.prepare(QStringLiteral("SELECT day, known, learning, comprehension FROM known_history WHERE day>=? ORDER BY day"));
     q.addBindValue(QDate::currentDate().addDays(-days + 1).toString(Qt::ISODate));
     db::exec(q);
     while (q.next())
         out << QVariantMap{{"day", q.value(0)}, {"label", QDate::fromString(q.value(0).toString(), Qt::ISODate).toString(QStringLiteral("d MMM"))},
-                           {"known", q.value(1)}, {"learning", q.value(2)}};
+                           {"known", q.value(1)}, {"learning", q.value(2)},
+                           {"comprehension", q.value(3).isNull() ? QVariant() : QVariant(q.value(3).toDouble())}};
     return out;
 }
 

@@ -151,7 +151,26 @@ Item {
                         anchors.fill: parent
                         points: sp.known
                         color: sp.ink
+                        emptyText: qsTr("Togu records your known words once a day. The line appears after the second day.")
+                        tip: d => "<b>" + d.label + "</b>  " + qsTr("%1 known").arg(d.known) + "<br>" + qsTr("%1 learning").arg(d.learning)
                     }
+                }
+            }
+
+            // ------------------------------------------------ comprehension
+            Panel {
+                title: qsTr("Library comprehension")
+                Layout.fillWidth: true
+                Layout.preferredHeight: 260
+                LineChart {
+                    anchors.fill: parent
+                    points: sp.known.filter(d => d.comprehension !== undefined && d.comprehension !== null)
+                    field: "comprehension"
+                    color: sp.ink
+                    ceilV: 100
+                    fmtAxis: v => Math.round(v) + "%"
+                    emptyText: qsTr("How much of your library you understand, recorded once a day. The line appears after the second day.")
+                    tip: d => "<b>" + d.label + "</b>  " + qsTr("%1% of words known").arg(Math.round(d.comprehension))
                 }
             }
         }
@@ -333,16 +352,22 @@ Item {
         id: lc
         property var points: []
         property color color
+        property string field: "known"
+        property var tip: d => ""
+        property string emptyText: ""
+        property var fmtAxis: v => Math.round(v).toLocaleString(Qt.locale(), "f", 0)
+        property real floorV: 0
+        property real ceilV: Infinity
         property int hover: -1
         readonly property real axisW: 52
         readonly property real labelH: 20
         readonly property real plotW: width - axisW
         readonly property real plotH: height - labelH
-        readonly property real minV: { let m = Infinity; for (const d of points) m = Math.min(m, d.known); return m === Infinity ? 0 : m }
-        readonly property real maxV: { let m = 0; for (const d of points) m = Math.max(m, d.known); return m }
+        readonly property real minV: { let m = Infinity; for (const d of points) m = Math.min(m, d[field]); return m === Infinity ? 0 : m }
+        readonly property real maxV: { let m = 0; for (const d of points) m = Math.max(m, d[field]); return m }
         // Range padded so a flat line sits in the middle.
-        readonly property real lo: Math.max(0, Math.floor((minV - Math.max(5, (maxV - minV) * 0.1)) / 10) * 10)
-        readonly property real hi: Math.ceil((maxV + Math.max(5, (maxV - minV) * 0.1)) / 10) * 10
+        readonly property real lo: Math.max(floorV, Math.floor((minV - Math.max(5, (maxV - minV) * 0.1)) / 10) * 10)
+        readonly property real hi: Math.min(ceilV, Math.ceil((maxV + Math.max(5, (maxV - minV) * 0.1)) / 10) * 10)
         function xFor(i) { return axisW + (points.length < 2 ? plotW / 2 : plotW * i / (points.length - 1)) }
         function yFor(v) { return plotH - plotH * (v - lo) / Math.max(1, hi - lo) }
 
@@ -352,7 +377,7 @@ Item {
             width: parent.width * 0.8
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.Wrap
-            text: qsTr("Togu records your known words once a day. The line appears after the second day.")
+            text: lc.emptyText
             color: Theme.text3; font.pixelSize: 13
         }
         Repeater {
@@ -365,7 +390,7 @@ Item {
                     width: lc.axisW - 8
                     anchors.verticalCenter: parent.top
                     horizontalAlignment: Text.AlignRight
-                    text: Math.round(modelData).toLocaleString(Qt.locale(), "f", 0)
+                    text: lc.fmtAxis(modelData)
                     color: Theme.text3; font.pixelSize: 11
                 }
             }
@@ -385,7 +410,7 @@ Item {
                 ctx.lineJoin = "round"
                 ctx.beginPath()
                 for (let i = 0; i < lc.points.length; ++i) {
-                    const x = lc.xFor(i), y = lc.yFor(lc.points[i].known)
+                    const x = lc.xFor(i), y = lc.yFor(lc.points[i][lc.field])
                     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y)
                 }
                 ctx.stroke()
@@ -406,14 +431,14 @@ Item {
             border.color: Theme.raised
             border.width: 2
             x: lc.hover >= 0 ? lc.xFor(lc.hover) - 5 : 0
-            y: lc.hover >= 0 ? lc.yFor(lc.points[lc.hover].known) - 5 : 0
+            y: lc.hover >= 0 ? lc.yFor(lc.points[lc.hover][lc.field]) - 5 : 0
         }
         Tip {
             visible: lc.hover >= 0
             readonly property var d: lc.hover >= 0 ? lc.points[lc.hover] : null
-            text: d ? "<b>" + d.label + "</b>  " + qsTr("%1 known").arg(d.known) + "<br>" + qsTr("%1 learning").arg(d.learning) : ""
+            text: d ? lc.tip(d) : ""
             x: lc.hover >= 0 ? Math.max(0, Math.min(lc.width - width, lc.xFor(lc.hover) - width / 2)) : 0
-            y: d ? Math.max(0, lc.yFor(d.known) - height - 12) : 0
+            y: d ? Math.max(0, lc.yFor(d[field]) - height - 12) : 0
         }
         MouseArea {
             anchors.fill: parent
