@@ -454,6 +454,16 @@ FocusScope {
                     color: index === session.currentIndex ? Theme.tint : rowHover.hovered ? Theme.fill : "transparent"
                     HoverHandler { id: rowHover }
                     TapHandler { onTapped: session.seekToLine(row.index) }
+                    Row {
+                        visible: rowHover.hovered
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: 4
+                        z: 2
+                        IconButton { size: 26; iconName: "cardAdd"; tip: qsTr("Card from this line"); onClicked: page.cardRequested(null, session.line(row.index), "") }
+                        IconButton { size: 26; iconName: "queue"; tip: qsTr("Put in the card queue"); onClicked: session.queueLine(row.index, "") }
+                        IconButton { size: 26; iconName: row.bookmarked ? "bookmarkOn" : "bookmark"; tip: qsTr("Bookmark"); onClicked: session.toggleBookmark(row.index) }
+                    }
                     Column {
                         id: rowCol
                         x: 14
@@ -465,6 +475,7 @@ FocusScope {
                             Text { text: Togu.formatTime(row.start); color: Theme.text3; font.pixelSize: 11; font.features: { "tnum": 1 } }
                             Icon { visible: row.bookmarked; name: "bookmarkOn"; size: 12; color: Theme.blue }
                         }
+
                         TokenLine {
                             tokens: row.tokens
                             fontSize: 18
