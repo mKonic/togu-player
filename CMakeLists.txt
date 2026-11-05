@@ -58,3 +58,6 @@ foreach(src ${TEST_SOURCES})
   target_compile_definitions(${name} PRIVATE TOGU_TEST_DATA="${CMAKE_SOURCE_DIR}/tests/data")
   add_test(NAME ${name} COMMAND ${name})
 endforeach()
+
+add_executable(togu-dev tools/togu-dev.cpp)
+target_link_libraries(togu-dev PRIVATE togu_core)
