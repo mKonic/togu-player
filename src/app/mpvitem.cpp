@@ -101,6 +101,9 @@ MpvItem::MpvItem(QQuickItem *parent) : QQuickFramebufferObject(parent)
     mpv_set_option_string(m_mpv, "ytdl-format", "bv*[height<=?1080]+(ba[format_note*=original]/ba[language^=ja]/ba)/b");
     // Stream links are signed for the address yt-dlp used; IPv4 keeps that the same one mpv connects from.
     mpv_set_option_string(m_mpv, "ytdl-raw-options", "force-ipv4=");
+    // YouTube refuses stream requests with ffmpeg's Icy-MetaData header; the user agent is set per video
+    // (setStream), since stream URLs only work with the one they were issued to.
+    mpv_set_option_string(m_mpv, "stream-lavf-o", "icy=0");
     mpv_set_option_string(m_mpv, "input-default-bindings", "no");
     mpv_set_option_string(m_mpv, "input-vo-keyboard", "no");
     mpv_set_option_string(m_mpv, "osc", "no");
@@ -246,14 +249,44 @@ void MpvItem::setSource(const QString &s)
     m_source = s;
     emit sourceChanged();
     if (s.isEmpty()) stop();
-    else if (!m_ctx) m_pending = s;
-    else command({QStringLiteral("loadfile"), s, QStringLiteral("replace")});
+    else {
+        // Undo what a YouTube stream set.
+        const char *clr[] = {"change-list", "audio-files", "clr", "", nullptr};
+        mpv_command(m_mpv, clr);
+        mpv_set_property_string(m_mpv, "user-agent", "libmpv");
+        mpv_set_property_string(m_mpv, "ytdl", "yes");
+        load({QStringLiteral("loadfile"), s, QStringLiteral("replace")});
+    }
+}
+
+void MpvItem::setStream(const QString &source, const QString &video, const QString &audio, const QString &userAgent)
+{
+    m_source = source;
+    emit sourceChanged();
+    // Properties, not per-file options: those weren't applied to the stream requests. Set synchronously
+    // so they are in place before the load starts (tested 2026-11-05).
+    const char *clr[] = {"change-list", "audio-files", "clr", "", nullptr};
+    mpv_command(m_mpv, clr);
+    const QByteArray a = audio.toUtf8();
+    if (!audio.isEmpty() && audio != video) {
+        const char *add[] = {"change-list", "audio-files", "append", a.constData(), nullptr};
+        mpv_command(m_mpv, add);
+    }
+    mpv_set_property_string(m_mpv, "user-agent", userAgent.toUtf8().constData());
+    mpv_set_property_string(m_mpv, "ytdl", "no");
+    load({QStringLiteral("loadfile"), video, QStringLiteral("replace")});
+}
+
+void MpvItem::load(const QVariantList &cmd)
+{
+    if (!m_ctx) m_pending = cmd;
+    else command(cmd);
 }
 
 void MpvItem::loadPending()
 {
     if (m_pending.isEmpty()) return;
-    command({QStringLiteral("loadfile"), m_pending, QStringLiteral("replace")});
+    command(m_pending);
     m_pending.clear();
 }
 

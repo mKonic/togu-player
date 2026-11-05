@@ -63,23 +63,27 @@ QString coverArt(const QString &path)
     return {};
 }
 
-// A YouTube video is cut from its direct stream URLs; anything else is a file.
-static QString audioInput(const QString &path)
+// A YouTube video is cut from its direct stream URLs, sent with the user agent they were issued to;
+// anything else is a file. Each returns the ffmpeg input arguments.
+static QStringList audioInput(const QString &path)
 {
-    if (!yt::isYouTube(path)) return path;
-    return yt::streams(path).audio;
+    if (!yt::isYouTube(path)) return {"-i", path};
+    const yt::Streams st = yt::streams(path);
+    return {"-user_agent", st.userAgent, "-i", st.audio.isEmpty() ? st.video : st.audio};
 }
-static QString videoInput(const QString &path)
+static QStringList videoInput(const QString &path)
 {
-    if (!yt::isYouTube(path)) return path;
-    return yt::streams(path).video;
+    if (!yt::isYouTube(path)) return {"-i", path};
+    const yt::Streams st = yt::streams(path);
+    return {"-user_agent", st.userAgent, "-i", st.video};
 }
 
 QString cutAudio(const AudioCut &c)
 {
     const QString ext = c.format == u"opus" ? QStringLiteral("ogg") : QStringLiteral("mp3");
     const QString out = outName(ext);
-    QStringList args{"-ss", ts(c.start), "-t", ts(c.end - std::max(0.0, c.start)), "-i", audioInput(c.path),
+    QStringList args{"-ss", ts(c.start), "-t", ts(c.end - std::max(0.0, c.start))};
+    args << audioInput(c.path) << QStringList{
                      "-map", c.audioTrack >= 0 && !yt::isYouTube(c.path) ? QStringLiteral("0:a:%1").arg(c.audioTrack) : QStringLiteral("0:a:0"), "-vn", "-sn", "-ac", "1"};
     // Short fades keep the cut from clicking.
     const double dur = c.end - c.start;
@@ -91,7 +95,8 @@ QString cutAudio(const AudioCut &c)
 QString stillFrame(const QString &path, double t, int height, const QString &format)
 {
     const QString out = outName(format == u"jpg" ? QStringLiteral("jpg") : QStringLiteral("webp"));
-    QStringList args{"-ss", ts(t), "-i", videoInput(path), "-frames:v", "1", "-vf", QStringLiteral("scale=-2:%1").arg(height)};
+    QStringList args{"-ss", ts(t)};
+    args << videoInput(path) << QStringList{"-frames:v", "1", "-vf", QStringLiteral("scale=-2:%1").arg(height)};
     if (format == u"jpg") args << "-q:v" << "3";
     else args << "-c:v" << "libwebp" << "-quality" << "82";
     args << out;
@@ -102,7 +107,7 @@ QString animatedImage(const QString &path, double start, double end, int height,
 {
     const QString out = outName(QStringLiteral("webp"));
     const double dur = std::min(end - start, maxSeconds);
-    return run({"-ss", ts(start), "-t", ts(dur), "-i", videoInput(path), "-an", "-sn",
+    return run(QStringList{"-ss", ts(start), "-t", ts(dur)} + videoInput(path) + QStringList{"-an", "-sn",
                 "-vf", QStringLiteral("fps=12,scale=-2:%1:flags=lanczos").arg(std::min(height, 360)),
                 "-c:v", "libwebp_anim", "-loop", "0", "-quality", "55", "-compression_level", "4", out}) && QFileInfo(out).size() > 0 ? out : QString();
 }
@@ -111,11 +116,11 @@ QString videoClip(const QString &path, double start, double end, int height, int
 {
     const QString out = outName(QStringLiteral("webm"));
     const double dur = std::min(end - start, maxSeconds);
-    QStringList in{"-ss", ts(start), "-t", ts(dur), "-i", videoInput(path)};
+    QStringList in = QStringList{"-ss", ts(start), "-t", ts(dur)} + videoInput(path);
     QString audioMap = audioTrack >= 0 ? QStringLiteral("0:a:%1").arg(audioTrack) : QStringLiteral("0:a:0?");
-    if (yt::isYouTube(path) && audioInput(path) != videoInput(path)) {
+    if (yt::isYouTube(path) && !yt::streams(path).audio.isEmpty()) {
         // YouTube serves picture and sound as separate streams.
-        in << "-ss" << ts(start) << "-t" << ts(dur) << "-i" << audioInput(path);
+        in << "-ss" << ts(start) << "-t" << ts(dur) << audioInput(path);
         audioMap = QStringLiteral("1:a:0");
     }
     return run(in + QStringList{"-sn",

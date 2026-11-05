@@ -155,6 +155,13 @@ Item {
                     onClicked: if (modelData.id !== yp.tab) yp.go(modelData.id)
                 }
             }
+            IconButton {
+                iconName: "refresh"
+                size: 32
+                tip: qsTr("Refresh")
+                enabled: !yp.loading
+                onClicked: yp.load(false)
+            }
             Item { Layout.fillWidth: true }
             TButton {
                 visible: yp.hiddenCount > 0

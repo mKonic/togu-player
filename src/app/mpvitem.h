@@ -33,6 +33,8 @@ public:
 
     QString source() const { return m_source; }
     void setSource(const QString &s);
+    // Plays separate video and audio URLs (YouTube) under `source`, fetched with `userAgent`.
+    void setStream(const QString &source, const QString &video, const QString &audio, const QString &userAgent);
     double position() const { return m_position; }
     double duration() const { return m_duration; }
     bool paused() const { return m_paused; }
@@ -86,13 +88,15 @@ signals:
     void requestUpdate();
 
 private:
+    void load(const QVariantList &cmd);
     void processEvents();
     static void onWakeup(void *ctx);
     void handleProperty(const char *name, int format, void *data);
 
     mpv_handle *m_mpv = nullptr;
     mpv_render_context *m_ctx = nullptr;
-    QString m_source, m_pending;
+    QString m_source;
+    QVariantList m_pending; // a loadfile command waiting for the render context
     double m_position = 0, m_duration = 0, m_volume = 100, m_speed = 1, m_cacheEnd = 0;
     bool m_paused = false, m_muted = false, m_loaded = false, m_idle = true;
     int m_aid = 0;

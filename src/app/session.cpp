@@ -189,7 +189,8 @@ void PlaybackSession::open(const QString &pathOrUrl, int itemId)
     db::exec(d, QStringLiteral("UPDATE items SET last_played=? WHERE id=?"), {QDateTime::currentSecsSinceEpoch(), m_itemId});
     emit opened();
     emit offsetChanged();
-    if (m_player) m_player->setSource(m_path);
+    // YouTube starts once yt-dlp has resolved the streams (probeAndChooseSubs).
+    if (m_player && !yt::isYouTube(m_path)) m_player->setSource(m_path);
     m_saveTimer.start();
     probeAndChooseSubs();
 }
@@ -267,6 +268,7 @@ void PlaybackSession::probeAndChooseSubs()
         media::Probe probe;
         QList<names::SubMatch> matches;
         QList<yt::Subtitle> youtube;
+        yt::Streams streams;
         QString youtubeError, youtubeTitle;
     };
     auto *w = new QFutureWatcher<Found>(this);
@@ -281,6 +283,10 @@ void PlaybackSession::probeAndChooseSubs()
         m_probe = probe;
         m_srcs.clear();
         if (!found.youtubeError.isEmpty()) emit toast(found.youtubeError, QStringLiteral("pink"));
+        if (found.streams.valid() && m_player)
+            m_player->setStream(m_path, found.streams.video, found.streams.audio, found.streams.userAgent);
+        else if (yt::isYouTube(m_path) && found.youtubeError.isEmpty())
+            emit toast(tr("YouTube didn't give a stream for this video."), QStringLiteral("pink"));
         if (!found.youtubeTitle.isEmpty() && m_title != found.youtubeTitle) {
             // A link opened directly: name it, and remember the name for history and stats.
             m_title = found.youtubeTitle;
@@ -387,7 +393,13 @@ void PlaybackSession::probeAndChooseSubs()
     });
     w->setFuture(QtConcurrent::run([path] {
         Found f;
-        if (yt::isYouTube(path)) f.youtube = yt::fetchSubtitles(path, &f.youtubeError, &f.youtubeTitle);
+        if (yt::isYouTube(path)) {
+            const yt::Resolved r = yt::resolve(path);
+            f.youtube = r.subtitles;
+            f.streams = r.streams;
+            f.youtubeError = r.error;
+            f.youtubeTitle = r.title;
+        }
         else {
             f.probe = media::probe(path);
             f.matches = names::subtitlesFor(path);
