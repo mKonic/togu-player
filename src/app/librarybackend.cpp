@@ -465,6 +465,15 @@ void Library::clearMeta(int seriesId)
     bump();
 }
 
+void Library::editInfo(int seriesId, const QString &title, const QString &description)
+{
+    // An empty name falls back to the folder's.
+    const QString t = title.trimmed();
+    db::exec(db::app(), QStringLiteral("UPDATE series SET meta_title=?, meta_desc=?, meta_manual=1, meta_id=COALESCE(meta_id, 'none') WHERE id=?"),
+             {t.isEmpty() ? QVariant() : QVariant(t), description.trimmed().isEmpty() ? QVariant() : QVariant(description.trimmed()), seriesId});
+    bump();
+}
+
 void Library::refreshMeta(int seriesId)
 {
     db::exec(db::app(), QStringLiteral("UPDATE series SET meta_id=NULL, meta_manual=0 WHERE id=?"), {seriesId});

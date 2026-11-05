@@ -102,6 +102,7 @@ Item {
                                     id: moreMenu
                                     MenuItem { text: qsTr("Mark all watched"); onTriggered: Library.setSeriesWatched(sp.seriesId, true) }
                                     MenuItem { text: qsTr("Mark all unwatched"); onTriggered: Library.setSeriesWatched(sp.seriesId, false) }
+                                    MenuItem { text: qsTr("Edit info…"); onTriggered: editInfo.openFor(sp.seriesId, sp.info.title, sp.info.description) }
                                     MenuItem { text: qsTr("Export condensed audio…"); onTriggered: condenseDir.open() }
                                     MenuItem { text: qsTr("Remove online info"); onTriggered: Library.clearMeta(sp.seriesId) }
                                     MenuItem { text: qsTr("Look up online again"); onTriggered: Library.refreshMeta(sp.seriesId) }
@@ -221,6 +222,7 @@ Item {
     }
 
     MetaDialog { id: metaDialog; anchors.centerIn: parent }
+    EditInfoDialog { id: editInfo; anchors.centerIn: parent }
     FolderDialog {
         id: condenseDir
         title: qsTr("Save condensed audio to")

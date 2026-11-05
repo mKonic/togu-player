@@ -53,6 +53,8 @@ public:
     Q_INVOKABLE void searchMeta(int seriesId, const QString &query);
     Q_INVOKABLE void applyMeta(int seriesId, const QVariantMap &candidate);
     Q_INVOKABLE void clearMeta(int seriesId);
+    // The name and description typed by the user; online lookups leave the series alone afterwards.
+    Q_INVOKABLE void editInfo(int seriesId, const QString &title, const QString &description);
     Q_INVOKABLE void refreshMeta(int seriesId);
     // Condensed audio: each episode's dialogue (from its indexed subtitle lines) joined
     // into one file per episode, written to `folder`.
