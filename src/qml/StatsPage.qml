@@ -8,7 +8,7 @@ Item {
     id: sp
     property int days: 30
     readonly property var daily: { Stats.revision; return Stats.daily(days) }
-    readonly property var top: { Stats.revision; return Stats.topSeries(days, 8) }
+    readonly property var topList: { Stats.revision; return Stats.topSeries(days, 8) }
     readonly property var totals: { Stats.revision; return Stats.totals() }
     readonly property var known: { Stats.revision; return Stats.knownHistory(days) }
     // Chart purple: one step darker than Theme.purple in dark mode so bars sit inside the lightness band.
@@ -80,7 +80,7 @@ Item {
                 Layout.preferredHeight: 300
                 BarChart {
                     anchors.fill: parent
-                    data: sp.daily
+                    points: sp.daily
                     color: sp.ink
                     goal: sp.totals.goal || 0
                     fmt: sp.dur
@@ -99,7 +99,7 @@ Item {
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: 300
                     Text {
-                        visible: sp.top.length === 0
+                        visible: sp.topList.length === 0
                         text: qsTr("Nothing yet in this range.")
                         color: Theme.text3; font.pixelSize: 13
                     }
@@ -107,11 +107,11 @@ Item {
                         width: parent.width
                         spacing: 10
                         Repeater {
-                            model: sp.top
+                            model: sp.topList
                             Item {
                                 width: parent.width
                                 height: 26
-                                readonly property real maxS: sp.top.length ? sp.top[0].seconds : 1
+                                readonly property real maxS: sp.topList.length ? sp.topList[0].seconds : 1
                                 Text {
                                     id: name
                                     width: parent.width * 0.42
@@ -149,7 +149,7 @@ Item {
                     Layout.preferredHeight: 300
                     LineChart {
                         anchors.fill: parent
-                        data: sp.known
+                        points: sp.known
                         color: sp.ink
                     }
                 }
@@ -164,6 +164,7 @@ Item {
         property string note
         property real progress: -1
         Layout.fillWidth: true
+        Layout.fillHeight: true
         implicitHeight: tc.implicitHeight + 28
         radius: 16
         color: Theme.raised
@@ -219,7 +220,7 @@ Item {
     // Seconds per day; hover a bar for the day and the split by kind.
     component BarChart: Item {
         id: bc
-        property var data: []
+        property var points: []
         property color color
         property real goal: 0
         property var fmt
@@ -231,7 +232,7 @@ Item {
         readonly property real plotH: height - labelH
         readonly property real maxV: {
             let m = goal
-            for (const d of data) m = Math.max(m, d.seconds)
+            for (const d of points) m = Math.max(m, d.seconds)
             return m
         }
         // Nice tick step in minutes.
@@ -245,8 +246,8 @@ Item {
             if (out[out.length - 1] < maxV) out.push(out[out.length - 1] + step * 60)
             return out
         }
-        readonly property real top: ticks.length ? ticks[ticks.length - 1] : 1
-        function yFor(v) { return plotH - plotH * v / Math.max(1, top) }
+        readonly property real topV: ticks.length ? ticks[ticks.length - 1] : 1
+        function yFor(v) { return plotH - plotH * v / Math.max(1, topV) }
 
         Repeater {
             model: bc.ticks
@@ -276,9 +277,9 @@ Item {
             Text { anchors.right: parent.right; anchors.bottom: parent.top; anchors.bottomMargin: 2; text: qsTr("Goal"); color: Theme.text2; font.pixelSize: 11 }
         }
         Repeater {
-            model: bc.data
+            model: bc.points
             Item {
-                readonly property real slot: bc.plotW / Math.max(1, bc.data.length)
+                readonly property real slot: bc.plotW / Math.max(1, bc.points.length)
                 x: bc.axisW + index * slot
                 width: slot
                 height: bc.height
@@ -295,7 +296,7 @@ Item {
                 }
                 // Sparse date labels: about seven across.
                 Text {
-                    visible: index % Math.max(1, Math.ceil(bc.data.length / 7)) === (bc.data.length - 1) % Math.max(1, Math.ceil(bc.data.length / 7))
+                    visible: index % Math.max(1, Math.ceil(bc.points.length / 7)) === (bc.points.length - 1) % Math.max(1, Math.ceil(bc.points.length / 7))
                     anchors.horizontalCenter: parent.horizontalCenter
                     y: bc.plotH + 5
                     text: modelData.label
@@ -311,7 +312,7 @@ Item {
         }
         Tip {
             visible: bc.hover >= 0
-            readonly property var d: bc.hover >= 0 ? bc.data[bc.hover] : null
+            readonly property var d: bc.hover >= 0 ? bc.points[bc.hover] : null
             text: {
                 if (!d) return ""
                 let s = "<b>" + d.label + "</b>  " + bc.fmt(d.seconds)
@@ -319,7 +320,7 @@ Item {
                 return s
             }
             x: {
-                const slot = bc.plotW / Math.max(1, bc.data.length)
+                const slot = bc.plotW / Math.max(1, bc.points.length)
                 const cx = bc.axisW + (bc.hover + 0.5) * slot
                 return Math.max(0, Math.min(bc.width - width, cx - width / 2))
             }
@@ -330,23 +331,23 @@ Item {
     // Known words over time with a crosshair.
     component LineChart: Item {
         id: lc
-        property var data: []
+        property var points: []
         property color color
         property int hover: -1
         readonly property real axisW: 52
         readonly property real labelH: 20
         readonly property real plotW: width - axisW
         readonly property real plotH: height - labelH
-        readonly property real minV: { let m = Infinity; for (const d of data) m = Math.min(m, d.known); return m === Infinity ? 0 : m }
-        readonly property real maxV: { let m = 0; for (const d of data) m = Math.max(m, d.known); return m }
+        readonly property real minV: { let m = Infinity; for (const d of points) m = Math.min(m, d.known); return m === Infinity ? 0 : m }
+        readonly property real maxV: { let m = 0; for (const d of points) m = Math.max(m, d.known); return m }
         // Range padded so a flat line sits in the middle.
         readonly property real lo: Math.max(0, Math.floor((minV - Math.max(5, (maxV - minV) * 0.1)) / 10) * 10)
         readonly property real hi: Math.ceil((maxV + Math.max(5, (maxV - minV) * 0.1)) / 10) * 10
-        function xFor(i) { return axisW + (data.length < 2 ? plotW / 2 : plotW * i / (data.length - 1)) }
+        function xFor(i) { return axisW + (points.length < 2 ? plotW / 2 : plotW * i / (points.length - 1)) }
         function yFor(v) { return plotH - plotH * (v - lo) / Math.max(1, hi - lo) }
 
         Text {
-            visible: lc.data.length < 2
+            visible: lc.points.length < 2
             anchors.centerIn: parent
             width: parent.width * 0.8
             horizontalAlignment: Text.AlignHCenter
@@ -355,7 +356,7 @@ Item {
             color: Theme.text3; font.pixelSize: 13
         }
         Repeater {
-            model: lc.data.length < 2 ? [] : [lc.lo, (lc.lo + lc.hi) / 2, lc.hi]
+            model: lc.points.length < 2 ? [] : [lc.lo, (lc.lo + lc.hi) / 2, lc.hi]
             Item {
                 y: lc.yFor(modelData)
                 width: lc.width
@@ -369,27 +370,27 @@ Item {
                 }
             }
         }
-        Text { visible: lc.data.length >= 2; x: lc.axisW; y: lc.plotH + 5; text: lc.data.length ? lc.data[0].label : ""; color: Theme.text3; font.pixelSize: 11 }
-        Text { visible: lc.data.length >= 2; anchors.right: parent.right; y: lc.plotH + 5; text: lc.data.length ? lc.data[lc.data.length - 1].label : ""; color: Theme.text3; font.pixelSize: 11 }
+        Text { visible: lc.points.length >= 2; x: lc.axisW; y: lc.plotH + 5; text: lc.points.length ? lc.points[0].label : ""; color: Theme.text3; font.pixelSize: 11 }
+        Text { visible: lc.points.length >= 2; anchors.right: parent.right; y: lc.plotH + 5; text: lc.points.length ? lc.points[lc.points.length - 1].label : ""; color: Theme.text3; font.pixelSize: 11 }
         Canvas {
             id: canvas
             anchors.fill: parent
-            visible: lc.data.length >= 2
+            visible: lc.points.length >= 2
             onPaint: {
                 const ctx = getContext("2d")
                 ctx.reset()
-                if (lc.data.length < 2) return
+                if (lc.points.length < 2) return
                 ctx.strokeStyle = lc.color
                 ctx.lineWidth = 2
                 ctx.lineJoin = "round"
                 ctx.beginPath()
-                for (let i = 0; i < lc.data.length; ++i) {
-                    const x = lc.xFor(i), y = lc.yFor(lc.data[i].known)
+                for (let i = 0; i < lc.points.length; ++i) {
+                    const x = lc.xFor(i), y = lc.yFor(lc.points[i].known)
                     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y)
                 }
                 ctx.stroke()
             }
-            Connections { target: lc; function onDataChanged() { canvas.requestPaint() } function onWidthChanged() { canvas.requestPaint() } function onHeightChanged() { canvas.requestPaint() } }
+            Connections { target: lc; function onPointsChanged() { canvas.requestPaint() } function onWidthChanged() { canvas.requestPaint() } function onHeightChanged() { canvas.requestPaint() } }
         }
         Rectangle {
             visible: lc.hover >= 0
@@ -405,21 +406,21 @@ Item {
             border.color: Theme.raised
             border.width: 2
             x: lc.hover >= 0 ? lc.xFor(lc.hover) - 5 : 0
-            y: lc.hover >= 0 ? lc.yFor(lc.data[lc.hover].known) - 5 : 0
+            y: lc.hover >= 0 ? lc.yFor(lc.points[lc.hover].known) - 5 : 0
         }
         Tip {
             visible: lc.hover >= 0
-            readonly property var d: lc.hover >= 0 ? lc.data[lc.hover] : null
+            readonly property var d: lc.hover >= 0 ? lc.points[lc.hover] : null
             text: d ? "<b>" + d.label + "</b>  " + qsTr("%1 known").arg(d.known) + "<br>" + qsTr("%1 learning").arg(d.learning) : ""
             x: lc.hover >= 0 ? Math.max(0, Math.min(lc.width - width, lc.xFor(lc.hover) - width / 2)) : 0
             y: d ? Math.max(0, lc.yFor(d.known) - height - 12) : 0
         }
         MouseArea {
             anchors.fill: parent
-            hoverEnabled: lc.data.length >= 2
+            hoverEnabled: lc.points.length >= 2
             onPositionChanged: mouse => {
                 const f = (mouse.x - lc.axisW) / Math.max(1, lc.plotW)
-                lc.hover = Math.max(0, Math.min(lc.data.length - 1, Math.round(f * (lc.data.length - 1))))
+                lc.hover = Math.max(0, Math.min(lc.points.length - 1, Math.round(f * (lc.points.length - 1))))
             }
             onExited: lc.hover = -1
         }

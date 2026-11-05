@@ -70,27 +70,6 @@ Item {
             }
         }
 
-        // Bulk actions for the selected rows.
-        Rectangle {
-            visible: wp.selectedCount > 0
-            Layout.fillWidth: true
-            implicitHeight: 48
-            radius: 14
-            color: Theme.tint
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 14
-                anchors.rightMargin: 8
-                spacing: 6
-                Text { text: qsTr("%n selected", "", wp.selectedCount); color: Theme.text; font.pixelSize: 13; font.weight: Font.DemiBold; Layout.fillWidth: true }
-                Repeater {
-                    model: ["known", "learning", "tracked", "unknown", "ignored"]
-                    TButton { small: true; quiet: true; tone: "plain"; text: wp.statuses.find(s => s.id === modelData).t; onClicked: wp.setSelected(modelData) }
-                }
-                IconButton { iconName: "close"; tip: qsTr("Clear selection"); onClicked: wp.selected = ({}) }
-            }
-        }
-
         Text {
             visible: wp.result.rows.length === 0
             text: wp.query ? qsTr("No saved word matches “%1”.").arg(wp.query)
@@ -105,6 +84,7 @@ Item {
             clip: true
             spacing: 4
             model: wp.result.rows
+            bottomMargin: wp.selectedCount > 0 ? 80 : 0
             ScrollBar.vertical: ScrollBar {}
             footer: Text {
                 width: list.width
@@ -123,7 +103,7 @@ Item {
                 readonly property bool sel: !!wp.selected[modelData.key]
                 color: sel ? Theme.purpleLow : (hov.hovered ? Theme.fill : "transparent")
                 HoverHandler { id: hov }
-                TapHandler { onTapped: wp.toggle(modelData.key) }
+                MouseArea { anchors.fill: parent; onClicked: wp.toggle(row.modelData.key) }
                 RowLayout {
                     anchors.fill: parent
                     anchors.leftMargin: 12
@@ -163,10 +143,10 @@ Item {
                                     anchors.centerIn: parent
                                     width: 12; height: 12; radius: 6
                                     color: Theme.statusColor(modelData.s)
-                                    opacity: wp.result.rows[row.index] && wp.result.rows[row.index].status === modelData.s ? 1 : 0.35
+                                    opacity: row.modelData.status === modelData.s ? 1 : 0.35
                                 }
                                 HoverHandler { id: dotHov }
-                                TapHandler { onTapped: Togu.setStatus(wp.result.rows[row.index].key, modelData.s) }
+                                MouseArea { anchors.fill: parent; onClicked: Togu.setStatus(row.modelData.key, modelData.s) }
                                 ToolTip.visible: dotHov.hovered
                                 ToolTip.delay: 500
                                 ToolTip.text: wp.statuses.find(x => x.id === modelData.s).t
@@ -177,6 +157,32 @@ Item {
                 required property int index
                 required property var modelData
             }
+        }
+    }
+
+    // Bulk actions for the selected rows.
+    Rectangle {
+        visible: wp.selectedCount > 0
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 20
+        width: Math.min(parent.width - 56, 720)
+        height: 52
+        border.color: Theme.line
+        z: 5
+        radius: 14
+        color: Theme.tint
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 14
+            anchors.rightMargin: 8
+            spacing: 6
+            Text { text: qsTr("%n selected", "", wp.selectedCount); color: Theme.text; font.pixelSize: 13; font.weight: Font.DemiBold; Layout.fillWidth: true }
+            Repeater {
+                model: ["known", "learning", "tracked", "unknown", "ignored"]
+                TButton { small: true; quiet: true; tone: "plain"; text: wp.statuses.find(s => s.id === modelData).t; onClicked: wp.setSelected(modelData) }
+            }
+            IconButton { iconName: "close"; tip: qsTr("Clear selection"); onClicked: wp.selected = ({}) }
         }
     }
 }

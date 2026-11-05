@@ -378,7 +378,7 @@ QVariantMap Togu::wordList(const QString &status, const QString &query, const QS
     QVariantList out;
     for (const Row &w : rows) {
         auto [lemma, reading] = jp::splitKey(w.key);
-        out << QVariantMap{{"key", w.key}, {"lemma", lemma}, {"reading", reading}, {"status", statusName(Status(w.s))},
+        out << QVariantMap{{"key", w.key}, {"lemma", lemma}, {"reading", jp::toHiragana(lemma) == reading ? QString() : reading}, {"status", statusName(Status(w.s))},
                            {"manual", w.manual}, {"card", Words::instance().hasCard(w.key)}, {"time", w.t},
                            {"rank", info.value(w.key).rank}, {"gloss", gloss.value(w.key)}};
     }
