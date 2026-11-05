@@ -321,12 +321,6 @@ Item {
                     text: modelData.label
                     color: Theme.text3; font.pixelSize: 11
                 }
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onEntered: bc.hover = index
-                    onExited: if (bc.hover === index) bc.hover = -1
-                }
             }
         }
         Tip {
@@ -344,6 +338,16 @@ Item {
                 return Math.max(0, Math.min(bc.width - width, cx - width / 2))
             }
             y: d ? Math.max(0, bc.yFor(d.seconds) - height - 8) : 0
+        }
+        // One hover area over the bars and the tip, so the tip can't steal the hover.
+        MouseArea {
+            x: bc.axisW
+            width: bc.plotW
+            height: bc.height
+            hoverEnabled: bc.points.length > 0
+            onPositionChanged: mouse => bc.hover = Math.max(0, Math.min(bc.points.length - 1,
+                Math.floor(mouse.x / Math.max(1, bc.plotW) * bc.points.length)))
+            onExited: bc.hover = -1
         }
     }
 
