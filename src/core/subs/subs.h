@@ -17,6 +17,8 @@ QList<SubLine> parseSrt(const QString &src);
 QList<SubLine> parseVtt(const QString &src);
 QList<SubLine> parseAss(const QString &src);
 QList<SubLine> parseLrc(const QString &src, double lastEnd = 0);
+// YouTube's timed-text JSON (yt-dlp --sub-format json3).
+QList<SubLine> parseJson3(const QString &src);
 // Picks the parser from the file extension.
 QList<SubLine> parse(const QString &name, const QString &src);
 // Reads a file, guessing its encoding (UTF-8, UTF-16 BOM, else Shift_JIS).

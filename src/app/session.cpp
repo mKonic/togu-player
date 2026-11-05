@@ -10,6 +10,7 @@
 #include "mpvitem.h"
 #include "queue.h"
 #include "settings.h"
+#include "core/youtube/ytdlp.h"
 
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -172,6 +173,7 @@ void PlaybackSession::open(const QString &pathOrUrl, int itemId)
         m_synced = q.value(3).toBool();
         m_offset2 = q.value(4).toDouble();
         const QString series = q.value(10).toString().isEmpty() ? q.value(6).toString() : q.value(10).toString();
+        if (series.isEmpty() && yt::isYouTube(m_path) && !q.value(5).toString().isEmpty()) m_title = q.value(5).toString();
         if (!series.isEmpty()) {
             m_title = series;
             if (!q.value(8).isNull() && q.value(8).toDouble() >= 0)
@@ -261,15 +263,40 @@ void PlaybackSession::probeAndChooseSubs()
     const QString path = m_path;
     ++m_loading;
     emit loadingChanged();
-    auto *w = new QFutureWatcher<std::pair<media::Probe, QList<names::SubMatch>>>(this);
+    struct Found {
+        media::Probe probe;
+        QList<names::SubMatch> matches;
+        QList<yt::Subtitle> youtube;
+        QString youtubeError, youtubeTitle;
+    };
+    auto *w = new QFutureWatcher<Found>(this);
     connect(w, &QFutureWatcherBase::finished, this, [this, w, gen] {
         w->deleteLater();
         --m_loading;
         emit loadingChanged();
         if (gen != m_generation) return;
-        auto [probe, matches] = w->result();
+        const Found found = w->result();
+        const media::Probe &probe = found.probe;
+        const QList<names::SubMatch> &matches = found.matches;
         m_probe = probe;
         m_srcs.clear();
+        if (!found.youtubeError.isEmpty()) emit toast(found.youtubeError, QStringLiteral("pink"));
+        if (!found.youtubeTitle.isEmpty() && m_title != found.youtubeTitle) {
+            // A link opened directly: name it, and remember the name for history and stats.
+            m_title = found.youtubeTitle;
+            db::exec(db::app(), QStringLiteral("UPDATE items SET title=?, kind='youtube' WHERE id=?"), {m_title, m_itemId});
+            emit opened();
+        }
+        for (const yt::Subtitle &y : found.youtube) {
+            Source s;
+            s.id = QStringLiteral("file:") + y.path;
+            s.kind = QStringLiteral("file");
+            s.path = y.path;
+            s.label = y.label;
+            s.lang = y.lang;
+            s.japanese = y.lang == u"ja";
+            m_srcs.append(s);
+        }
         for (const names::SubMatch &m : matches) {
             Source s;
             s.id = QStringLiteral("file:") + m.path;
@@ -358,7 +385,15 @@ void PlaybackSession::probeAndChooseSubs()
         if (const Source *s = source(primary)) loadPrimary(*s, restoring);
         if (const Source *s = source(secondary)) loadSecondary(*s);
     });
-    w->setFuture(QtConcurrent::run([path] { return std::make_pair(media::probe(path), names::subtitlesFor(path)); }));
+    w->setFuture(QtConcurrent::run([path] {
+        Found f;
+        if (yt::isYouTube(path)) f.youtube = yt::fetchSubtitles(path, &f.youtubeError, &f.youtubeTitle);
+        else {
+            f.probe = media::probe(path);
+            f.matches = names::subtitlesFor(path);
+        }
+        return f;
+    }));
 }
 
 void PlaybackSession::selectPrimary(const QString &id)

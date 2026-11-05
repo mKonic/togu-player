@@ -22,6 +22,11 @@ ApplicationWindow {
         player.visible = true
         player.open(path, itemId)
     }
+    function playYouTube(v) {
+        const id = Library.rememberVideo(v)
+        player.visible = true
+        player.open("https://www.youtube.com/watch?v=" + v.id, id)
+    }
     function openBook(path) {
         readerLoader.active = true
         readerLoader.item.visible = true
@@ -57,7 +62,7 @@ ApplicationWindow {
         Loader {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            sourceComponent: ({ watch: libraryPage, listen: libraryPage, read: readPage, manga: mangaPage,
+            sourceComponent: ({ watch: libraryPage, listen: libraryPage, read: readPage, manga: mangaPage, youtube: youtubePage,
                                 words: wordsPage, stats: statsPage, queue: queuePage, settings: settingsPage })[win.page]
         }
     }
@@ -65,6 +70,7 @@ ApplicationWindow {
     Component { id: libraryPage; LibraryPage { kind: win.page === "listen" ? "audio" : "video"; onPlay: (path, id) => win.playFile(path, id) } }
     Component { id: readPage; ShelfPage { kind: "book"; onOpenItem: (path, id) => win.openBook(path) } }
     Component { id: mangaPage; ShelfPage { kind: "manga"; onOpenItem: (path, id) => win.openManga(path) } }
+    Component { id: youtubePage; YouTubePage { bridge: ytLoader.item; onPlay: v => win.playYouTube(v) } }
     Component { id: wordsPage; WordsPage {} }
     Component { id: statsPage; StatsPage {} }
     Component { id: queuePage; QueuePage {} }
@@ -105,6 +111,13 @@ ApplicationWindow {
     }
 
     CardCreator { id: cardCreator; anchors.centerIn: parent }
+
+    // YouTube's session starts the first time the tab opens and then stays.
+    Loader {
+        id: ytLoader
+        active: win.page === "youtube" || active
+        sourceComponent: YtBridge {}
+    }
 
     // A queued line: play it, then open the Card Creator on it.
     Connections {
@@ -147,7 +160,13 @@ ApplicationWindow {
         }
     }
 
+    // "togu-player FILE": play it, or open it in the reader.
     Component.onCompleted: {
-        if (startupFiles.length) playFile(startupFiles[0], 0)
+        if (!startupFiles.length) return
+        const a = startupFiles[0]
+        if (/^https?:\/\//.test(a)) { player.visible = true; player.open(a, 0) }
+        else if (/\.(epub|txt)$/i.test(a)) openBook(a)
+        else if (/\.mokuro$/i.test(a)) openManga(a)
+        else playFile(a, 0)
     }
 }

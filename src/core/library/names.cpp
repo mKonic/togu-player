@@ -23,7 +23,7 @@ const QSet<QString> &audioExt()
 }
 const QSet<QString> &subExt()
 {
-    static const QSet<QString> s = {"ass", "ssa", "srt", "vtt", "lrc"};
+    static const QSet<QString> s = {"ass", "ssa", "srt", "vtt", "lrc", "json3"};
     return s;
 }
 

@@ -97,6 +97,10 @@ MpvItem::MpvItem(QQuickItem *parent) : QQuickFramebufferObject(parent)
     mpv_set_option_string(m_mpv, "hwdec", "auto-safe");
     mpv_set_option_string(m_mpv, "keep-open", "yes");
     mpv_set_option_string(m_mpv, "idle", "yes");
+    // YouTube through yt-dlp: up to 1080p, the original audio rather than an auto-dub.
+    mpv_set_option_string(m_mpv, "ytdl-format", "bv*[height<=?1080]+(ba[format_note*=original]/ba[language^=ja]/ba)/b");
+    // Stream links are signed for the address yt-dlp used; IPv4 keeps that the same one mpv connects from.
+    mpv_set_option_string(m_mpv, "ytdl-raw-options", "force-ipv4=");
     mpv_set_option_string(m_mpv, "input-default-bindings", "no");
     mpv_set_option_string(m_mpv, "input-vo-keyboard", "no");
     mpv_set_option_string(m_mpv, "osc", "no");

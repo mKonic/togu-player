@@ -3,6 +3,9 @@
 #include "core/jp/jp.h"
 
 #include <QFile>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QJsonArray>
 #include <QRegularExpression>
 #include <QSet>
 #include <QStringDecoder>
@@ -204,9 +207,35 @@ QList<SubLine> parseLrc(const QString &src, double lastEnd)
     return out;
 }
 
+QList<SubLine> parseJson3(const QString &src)
+{
+    const QJsonArray events = QJsonDocument::fromJson(src.toUtf8()).object().value("events").toArray();
+    QList<SubLine> out;
+    bool rolling = false; // YouTube's automatic captions roll: each line stays up until the next one
+    for (const QJsonValue &ev : events) {
+        const QJsonObject e = ev.toObject();
+        if (e.value("aAppend").toInt()) {
+            rolling = true;
+            continue;
+        }
+        const QJsonArray segs = e.value("segs").toArray();
+        if (segs.isEmpty()) continue;
+        QString text;
+        for (const QJsonValue &sg : segs) text += sg.toObject().value("utf8").toString();
+        text = text.trimmed();
+        if (text.isEmpty()) continue;
+        const double start = e.value("tStartMs").toDouble() / 1000.0;
+        out.append({start, start + e.value("dDurationMs").toDouble() / 1000.0, text});
+    }
+    if (rolling)
+        for (int i = 0; i + 1 < out.size(); ++i) out[i].end = std::min(out[i].end, std::max(out[i].start + 0.3, out[i + 1].start));
+    return out;
+}
+
 QList<SubLine> parse(const QString &name, const QString &src)
 {
     const QString ext = name.section(u'.', -1).toLower();
+    if (ext == u"json3") return parseJson3(src);
     if (ext == u"ass" || ext == u"ssa") return parseAss(src);
     if (ext == u"vtt") return parseVtt(src);
     if (ext == u"lrc") return parseLrc(src);

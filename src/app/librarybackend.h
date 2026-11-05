@@ -57,6 +57,9 @@ public:
     // Condensed audio: each episode's dialogue (from its indexed subtitle lines) joined
     // into one file per episode, written to `folder`.
     Q_INVOKABLE void exportCondensed(int seriesId, const QUrl &folder);
+    // A YouTube video ({id, title, channel, channelId, duration, ...}) as an item, so resume, history and
+    // stats work as for files. Returns the item id.
+    Q_INVOKABLE int rememberVideo(const QVariantMap &video);
 
 signals:
     void busyChanged();

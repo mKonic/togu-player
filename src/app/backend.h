@@ -57,6 +57,8 @@ public:
     Q_INVOKABLE void clearWords();
 
     Q_INVOKABLE QString readTextFile(const QUrl &file) const;
+    // A text file from the app's resources (":/..." path).
+    Q_INVOKABLE QString resourceText(const QString &path) const;
     Q_INVOKABLE bool writeTextFile(const QUrl &file, const QString &text) const;
     Q_INVOKABLE QString localPath(const QUrl &url) const { return url.toLocalFile(); }
     Q_INVOKABLE QUrl fileUrl(const QString &path) const { return QUrl::fromLocalFile(path); }

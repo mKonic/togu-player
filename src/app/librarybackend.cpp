@@ -308,6 +308,24 @@ void Library::setWatched(int itemId, bool watched)
     bump();
 }
 
+int Library::rememberVideo(const QVariantMap &v)
+{
+    const QString path = QStringLiteral("https://www.youtube.com/watch?v=") + v.value("id").toString();
+    const QJsonObject yt{{"channel", v.value("channel").toString()}, {"channelId", v.value("channelId").toString()},
+                         {"thumb", v.value("thumb").toString()}};
+    auto d = db::app();
+    const int id = db::scalar(d, QStringLiteral("SELECT id FROM items WHERE path=?"), {path}).toInt();
+    if (id) {
+        db::exec(d, QStringLiteral("UPDATE items SET title=?, duration=COALESCE(NULLIF(?,0), duration) WHERE id=?"),
+                 {v.value("title"), v.value("duration").toDouble(), id});
+        return id;
+    }
+    db::exec(d, QStringLiteral("INSERT INTO items (path, kind, title, duration, extra) VALUES (?, 'youtube', ?, ?, ?)"),
+             {path, v.value("title"), v.value("duration").toDouble(),
+              QString::fromUtf8(QJsonDocument(QJsonObject{{"youtube", yt}}).toJson(QJsonDocument::Compact))});
+    return db::scalar(d, QStringLiteral("SELECT id FROM items WHERE path=?"), {path}).toInt();
+}
+
 void Library::exportCondensed(int seriesId, const QUrl &folder)
 {
     const QString dir = folder.toLocalFile();

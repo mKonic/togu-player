@@ -31,6 +31,7 @@ Rectangle {
                 { id: "listen", icon: "music", label: qsTr("Listen") },
                 { id: "read", icon: "book", label: qsTr("Read") },
                 { id: "manga", icon: "manga", label: qsTr("Manga") },
+                { id: "youtube", icon: "tv", label: qsTr("YouTube") },
             ]
             delegate: RailButton { item: modelData }
         }

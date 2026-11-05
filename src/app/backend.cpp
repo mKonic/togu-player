@@ -328,6 +328,12 @@ void Togu::importWordList(const QString &text, const QString &status)
     emit toast(tr("%n word(s) imported", nullptr, int(keys.size())), QStringLiteral("teal"));
 }
 
+QString Togu::resourceText(const QString &path) const
+{
+    QFile f(path);
+    return f.open(QIODevice::ReadOnly) ? QString::fromUtf8(f.readAll()) : QString();
+}
+
 QVariantMap Togu::wordList(const QString &status, const QString &query, const QString &sort, int limit) const
 {
     QString where = QStringLiteral("1=1");

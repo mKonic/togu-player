@@ -27,6 +27,8 @@ QtObject {
         "folder": "<path d='M3.5 7.5A2 2 0 0 1 5.5 5.5h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z'/>",
         "plus": "<path d='M12 5v14M5 12h14'/>",
         "minus": "<path d='M5 12h14'/>",
+        "tv": "<rect x='3' y='7' width='18' height='13' rx='2.5'/><path d='M8.5 3l3.5 4 3.5-4'/><path d='M10.5 11v5l4-2.5z' fill='C' stroke-width='1.5'/>",
+        "logout": "<path d='M14 4h4.5a1.5 1.5 0 0 1 1.5 1.5v13a1.5 1.5 0 0 1-1.5 1.5H14'/><path d='M10 8l-4 4 4 4M6 12h10'/>",
         "film": "<rect x='3' y='5' width='18' height='14' rx='2.5'/><path d='M10 9.5v5l4.5-2.5z' fill='C' stroke-width='1.5'/>",
         "music": "<path d='M9 18V6l11-2v12'/><circle cx='6.5' cy='18' r='2.5'/><circle cx='17.5' cy='16' r='2.5'/>",
         "book": "<path d='M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15.5H5.5A1.5 1.5 0 0 0 4 21z'/><path d='M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15.5h5.5A1.5 1.5 0 0 1 20 21z'/>",
