@@ -74,6 +74,27 @@ ApplicationWindow {
 
     CardCreator { id: cardCreator; anchors.centerIn: parent }
 
+    // A queued line: play it, then open the Card Creator on it.
+    Connections {
+        target: Queue
+        function onOpenRequested(q) {
+            win.playFile(q.path, q.item)
+            player.session.openAt(q.path, q.item, q.start)
+            queueOpen.q = q
+            queueOpen.restart()
+        }
+    }
+    Timer {
+        id: queueOpen
+        property var q
+        interval: 900
+        onTriggered: {
+            const entries = q.word ? Togu.lookup(q.word.split("\u001f")[0]) : []
+            cardCreator.openFor(entries.length ? entries[0] : null, { start: q.start, end: q.end, text: q.text, text2: q.text2 }, "", player.session, player.mpv)
+            Queue.remove(q.id)
+        }
+    }
+
     Toasts { id: toasts; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 40; z: 100 }
     Connections {
         target: Togu

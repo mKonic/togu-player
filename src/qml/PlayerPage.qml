@@ -89,6 +89,8 @@ FocusScope {
         onWheel: wheel => mpv.volume = mpv.volume + (wheel.angleDelta.y > 0 ? 5 : -5)
     }
     function poke() {
+        // Keys go to the player whenever the pointer is over it and nothing else wants them.
+        if (!page.activeFocus && !subMenu.visible) page.forceActiveFocus()
         controlsShown = true
         hideTimer.restart()
     }

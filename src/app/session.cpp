@@ -8,6 +8,7 @@
 #include "core/words/words.h"
 #include "display.h"
 #include "mpvitem.h"
+#include "queue.h"
 #include "settings.h"
 
 #include <QCryptographicHash>
@@ -895,6 +896,7 @@ void PlaybackSession::queueLine(int index, const QString &word)
     const QVariantMap l = line(index);
     db::exec(db::app(), QStringLiteral("INSERT INTO queue (item, start, end, text, text2, word, time) VALUES (?,?,?,?,?,?,?)"),
              {m_itemId, l.value("start"), l.value("end"), l.value("text"), l.value("text2"), word, QDateTime::currentSecsSinceEpoch()});
+    Queue::instance()->notifyChanged();
     emit toast(tr("Line added to the card queue"), QStringLiteral("purple"));
 }
 
