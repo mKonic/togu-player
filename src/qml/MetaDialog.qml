@@ -35,7 +35,7 @@ Popup {
     ColumnLayout {
         anchors.fill: parent
         spacing: 14
-        Text { text: qsTr("Match title"); color: Theme.text; font.pixelSize: 20; font.weight: Font.Bold }
+        Text { text: qsTr("Search online"); color: Theme.text; font.pixelSize: 20; font.weight: Font.Bold }
         RowLayout {
             spacing: 8
             TField { id: query; Layout.fillWidth: true; onAccepted: d.search() }

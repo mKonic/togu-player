@@ -9,6 +9,8 @@ import Togu
 Item {
     id: lib
     property string kind: "video"
+    // Watch and Listen share this page: switching tabs starts from the grid again.
+    onKindChanged: { openSeries = 0; searchField.text = "" }
     property int openSeries: 0
     property string sort: "recent"
     property string filter: ""
@@ -61,6 +63,7 @@ Item {
                     Text { text: Library.status; color: Theme.text2; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
                 }
                 TField {
+                    id: searchField
                     Layout.preferredWidth: 240
                     placeholderText: qsTr("Search")
                     visible: lib.rootList.length > 0

@@ -93,7 +93,6 @@ Item {
                                 text: sp.nextUp ? (sp.nextUp.position > 5 && !sp.nextUp.watched ? qsTr("Resume") : qsTr("Play")) + (sp.nextUp.episode >= 0 ? " " + qsTr("episode %1").arg(sp.nextUp.episode) : "") : ""
                                 onClicked: sp.play(sp.nextUp.path, sp.nextUp.id)
                             }
-                            TButton { quiet: true; tone: "plain"; iconName: "search"; text: qsTr("Match title…"); onClicked: metaDialog.openFor(sp.seriesId, sp.info.folderTitle) }
                             IconButton {
                                 id: moreBtn
                                 iconName: "more"
@@ -102,6 +101,7 @@ Item {
                                     id: moreMenu
                                     MenuItem { text: qsTr("Mark all watched"); onTriggered: Library.setSeriesWatched(sp.seriesId, true) }
                                     MenuItem { text: qsTr("Mark all unwatched"); onTriggered: Library.setSeriesWatched(sp.seriesId, false) }
+                                    MenuItem { text: qsTr("Search online…"); onTriggered: metaDialog.openFor(sp.seriesId, sp.info.folderTitle) }
                                     MenuItem { text: qsTr("Edit info…"); onTriggered: editInfo.openFor(sp.seriesId, sp.info.title, sp.info.description) }
                                     MenuItem { text: qsTr("Export condensed audio…"); onTriggered: condenseDir.open() }
                                     MenuItem { text: qsTr("Remove online info"); onTriggered: Library.clearMeta(sp.seriesId) }
