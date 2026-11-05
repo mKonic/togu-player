@@ -4,6 +4,8 @@ import QtQuick.Controls.Basic
 Slider {
     id: s
     property color accent: Theme.purple
+    // Fill from the right end to the handle (right-to-left reading).
+    property bool fillFromEnd: false
     hoverEnabled: true
     background: Rectangle {
         x: s.leftPadding
@@ -13,7 +15,8 @@ Slider {
         radius: height / 2
         color: Theme.fillHover
         Rectangle {
-            width: s.visualPosition * parent.width
+            x: s.fillFromEnd ? s.visualPosition * parent.width : 0
+            width: (s.fillFromEnd ? 1 - s.visualPosition : s.visualPosition) * parent.width
             height: parent.height
             radius: height / 2
             color: s.accent

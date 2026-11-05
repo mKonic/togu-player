@@ -150,7 +150,12 @@ ApplicationWindow {
         }
     }
 
+    // "togu-player FILE" (also how the desktop entry opens files): the reader for books and manga.
     Component.onCompleted: {
-        if (startupFiles.length) playFile(startupFiles[0], 0)
+        if (!startupFiles.length) return
+        const a = startupFiles[0]
+        if (/\.(epub|txt)$/i.test(a)) openBook(a)
+        else if (/\.mokuro$/i.test(a)) openManga(a)
+        else playFile(a, 0)
     }
 }

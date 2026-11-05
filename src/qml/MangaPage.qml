@@ -177,6 +177,7 @@ FocusScope {
             TSlider {
                 Layout.preferredWidth: 220
                 from: vol.pages.length - 1; to: 0; stepSize: 1
+                fillFromEnd: true
                 value: mp.page
                 onMoved: mp.go(Math.round(value))
             }
