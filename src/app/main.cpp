@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
     app.setApplicationDisplayName(QStringLiteral("Togu"));
     app.setOrganizationName(QStringLiteral("Togu"));
     app.setDesktopFileName(QStringLiteral("togu-player"));
+    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("togu-player"), QIcon(QStringLiteral(":/assets/togu-player.png"))));
     std::setlocale(LC_NUMERIC, "C");
 
     QFontDatabase::addApplicationFont(QStringLiteral(":/assets/fonts/inter.woff2"));

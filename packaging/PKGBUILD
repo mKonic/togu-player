@@ -1,0 +1,31 @@
+# Maintainer: mKonic
+pkgname=togu-player-git
+pkgver=r0
+pkgrel=1
+pkgdesc="Japanese immersion player: local video, audio, books and manga with lookups and Anki cards"
+arch=(x86_64)
+url="https://github.com/mKonic/togu-player"
+license=(GPL-3.0-only)
+depends=(qt6-base qt6-declarative qt6-webengine mpv libarchive ffmpeg noto-fonts-cjk)
+makedepends=(git cmake ninja rust)
+provides=(togu-player)
+conflicts=(togu-player)
+source=("git+$url.git")
+sha256sums=(SKIP)
+
+pkgver() {
+    cd togu-player
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+build() {
+    cmake -S togu-player -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DTOGU_TESTS=OFF
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}
