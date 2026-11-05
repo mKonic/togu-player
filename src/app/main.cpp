@@ -48,11 +48,11 @@ int main(int argc, char *argv[])
     app.setApplicationDisplayName(QStringLiteral("Togu"));
     app.setOrganizationName(QStringLiteral("Togu"));
     app.setDesktopFileName(QStringLiteral("togu-player"));
-    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("togu-player"), QIcon(QStringLiteral(":/assets/togu-player.png"))));
+    app.setWindowIcon(QIcon::fromTheme(QStringLiteral("togu-player"), QIcon(QStringLiteral(":/qt/qml/Togu/assets/togu-player.png"))));
     std::setlocale(LC_NUMERIC, "C");
 
-    QFontDatabase::addApplicationFont(QStringLiteral(":/assets/fonts/inter.woff2"));
-    QFontDatabase::addApplicationFont(QStringLiteral(":/assets/fonts/fredoka.woff2"));
+    QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/Togu/assets/fonts/inter.woff2"));
+    QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/Togu/assets/fonts/fredoka.woff2"));
     QFont ui(QStringLiteral("Inter"));
     ui.setFamilies({QStringLiteral("Inter"), QStringLiteral("Inter Variable"), QStringLiteral("Noto Sans CJK JP"), QStringLiteral("sans-serif")});
     ui.setPixelSize(14);

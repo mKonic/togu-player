@@ -45,8 +45,7 @@ qt_add_qml_module(togu-player
   URI Togu
   VERSION 1.0
   QML_FILES ${QML_FILES}
-  RESOURCES assets/fonts/inter.woff2 assets/fonts/fredoka.woff2 assets/togu-player.png
-  NO_RESOURCE_TARGET_PATH)
+  RESOURCES assets/fonts/inter.woff2 assets/fonts/fredoka.woff2 assets/togu-player.png)
 target_include_directories(togu-player PRIVATE src/app)
 target_link_libraries(togu-player PRIVATE togu_core Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::OpenGL Qt6::WebEngineQuick PkgConfig::MPV)
 install(TARGETS togu-player RUNTIME DESTINATION bin)

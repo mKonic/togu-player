@@ -12,6 +12,8 @@ provides=(togu-player)
 conflicts=(togu-player)
 source=("git+$url.git")
 sha256sums=(SKIP)
+# makepkg LTO flags break the Rust build (aws-lc in lindera's dictionary download).
+options=(!lto)
 
 pkgver() {
     cd togu-player
