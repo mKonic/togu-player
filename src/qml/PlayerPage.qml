@@ -546,7 +546,7 @@ FocusScope {
                 RowLayout {
                     spacing: 8
                     TButton { small: true; quiet: true; tone: "plain"; iconName: "upload"; text: qsTr("Import…"); onClicked: { importDialog.secondary = false; importDialog.open() } }
-                    TButton { small: true; quiet: true; tone: "plain"; iconName: "search"; text: qsTr("Search Jimaku…"); onClicked: { subMenu.close(); jimaku.openFor(session) } }
+                    TButton { visible: Settings.jimakuKey !== ""; small: true; quiet: true; tone: "plain"; iconName: "search"; text: qsTr("Search Jimaku…"); onClicked: { subMenu.close(); jimaku.openFor(session) } }
                 }
                 Rectangle { Layout.fillWidth: true; height: 1; color: Theme.line }
                 Text { text: qsTr("Timing"); color: Theme.text; font.pixelSize: 15; font.weight: Font.Bold }
