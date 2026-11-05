@@ -113,12 +113,12 @@ Item {
                 SwitchRow { label: qsTr("Pause while the pointer is on the subtitles"); key: "pauseOnHover" }
                 ChoiceRow { label: qsTr("Look words up"); key: "lookupMode"
                     options: [{ text: qsTr("On hover"), value: "hover" }, { text: qsTr("On click"), value: "click" }] }
-                SliderRow { label: qsTr("Seek step (Alt+←/→)"); key: "seekStep"; from: 1; to: 30; step: 1; suffix: " s" }
+                SliderRow { label: qsTr("Seek step") + KeyMap.hint("seekBack"); key: "seekStep"; from: 1; to: 30; step: 1; suffix: " s" }
             }
             Section {
                 title: qsTr("Subtitle timing")
                 SwitchRow { label: qsTr("Auto-sync"); hint: qsTr("Line subtitles up with the speech the first time they're paired with a video. A manual adjustment pins that video until you sync again."); key: "autoSync" }
-                SliderRow { label: qsTr("Small step (Alt+I / Alt+O)"); key: "offsetStep"; from: 0.01; to: 0.5; step: 0.01; valueScale: 1000; suffix: " ms" }
+                SliderRow { label: qsTr("Small step") + KeyMap.hint("offsetBack"); key: "offsetStep"; from: 0.01; to: 0.5; step: 0.01; valueScale: 1000; suffix: " ms" }
                 SliderRow { label: qsTr("Big step"); key: "offsetStepBig"; from: 0.1; to: 5; step: 0.1; decimals: 1; suffix: " s" }
             }
         }
@@ -130,7 +130,7 @@ Item {
             spacing: 16
             Section {
                 title: qsTr("Dictionaries")
-                subtitle: qsTr("Yomitan-format dictionaries (.zip): definitions, frequency lists, pitch accent and kanji. Drag them up or down to set the order popups use.")
+                subtitle: qsTr("Yomitan-format dictionaries (.zip): definitions, frequency lists, pitch accent and kanji. The arrows set the order popups show them in.")
                 RowLayout {
                     spacing: 10
                     TButton { iconName: "plus"; text: qsTr("Add dictionaries…"); enabled: !Togu.dictBusy; onClicked: dictDialog.open() }

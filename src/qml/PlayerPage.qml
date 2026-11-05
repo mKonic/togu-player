@@ -364,11 +364,11 @@ FocusScope {
             anchors.rightMargin: 12
             anchors.bottomMargin: 8
             spacing: 2
-            IconButton { iconName: mpv.paused ? "play" : "pause"; color: "white"; size: 44; tip: qsTr("Play / pause (Space)"); onClicked: mpv.paused = !mpv.paused }
-            IconButton { iconName: "prevLine"; color: "white"; tip: qsTr("Previous line (A)"); onClicked: session.prevLine() }
-            IconButton { iconName: "replay"; color: "white"; tip: qsTr("Replay line (S)"); onClicked: session.replayLine() }
-            IconButton { iconName: "nextLine"; color: "white"; tip: qsTr("Next line (D)"); onClicked: session.nextLine() }
-            IconButton { iconName: mpv.muted || mpv.volume === 0 ? "mute" : "volume"; color: "white"; tip: qsTr("Mute (M)"); onClicked: mpv.muted = !mpv.muted }
+            IconButton { iconName: mpv.paused ? "play" : "pause"; color: "white"; size: 44; tip: qsTr("Play / pause") + KeyMap.hint("pause"); onClicked: mpv.paused = !mpv.paused }
+            IconButton { iconName: "prevLine"; color: "white"; tip: qsTr("Previous line") + KeyMap.hint("prevLine"); onClicked: session.prevLine() }
+            IconButton { iconName: "replay"; color: "white"; tip: qsTr("Replay line") + KeyMap.hint("replayLine"); onClicked: session.replayLine() }
+            IconButton { iconName: "nextLine"; color: "white"; tip: qsTr("Next line") + KeyMap.hint("nextLine"); onClicked: session.nextLine() }
+            IconButton { iconName: mpv.muted || mpv.volume === 0 ? "mute" : "volume"; color: "white"; tip: qsTr("Mute") + KeyMap.hint("mute"); onClicked: mpv.muted = !mpv.muted }
             TSlider { Layout.preferredWidth: 90; from: 0; to: 130; value: mpv.volume; onMoved: mpv.volume = value; accent: "white" }
             Text {
                 text: Togu.formatTime(mpv.position) + "  /  " + Togu.formatTime(mpv.duration)
@@ -422,9 +422,9 @@ FocusScope {
                 onClicked: subMenu.visible ? subMenu.close() : subMenu.open()
                 BusyIndicator { anchors.fill: parent; running: session.loadingSubs; visible: running }
             }
-            IconButton { iconName: "list"; color: "white"; tip: qsTr("Line list (G)"); active: page.sidePanel; onClicked: page.sidePanel = !page.sidePanel }
-            IconButton { iconName: "cardAdd"; color: "white"; tip: qsTr("Card from this line (E)"); onClicked: page.cardRequested(null, session.line(session.currentIndex >= 0 ? session.currentIndex : session.lastIndex), "") }
-            IconButton { iconName: page.fullscreen ? "unfullscreen" : "fullscreen"; color: "white"; tip: qsTr("Fullscreen (F)"); onClicked: page.fullscreenToggled() }
+            IconButton { iconName: "list"; color: "white"; tip: qsTr("Line list") + KeyMap.hint("sidePanel"); active: page.sidePanel; onClicked: page.sidePanel = !page.sidePanel }
+            IconButton { iconName: "cardAdd"; color: "white"; tip: qsTr("Card from this line") + KeyMap.hint("cardLine"); onClicked: page.cardRequested(null, session.line(session.currentIndex >= 0 ? session.currentIndex : session.lastIndex), "") }
+            IconButton { iconName: page.fullscreen ? "unfullscreen" : "fullscreen"; color: "white"; tip: qsTr("Fullscreen") + KeyMap.hint("fullscreen"); onClicked: page.fullscreenToggled() }
         }
     }
 
@@ -553,21 +553,21 @@ FocusScope {
                 Text { text: qsTr("Timing"); color: Theme.text; font.pixelSize: 15; font.weight: Font.Bold }
                 RowLayout {
                     spacing: 6
-                    IconButton { iconName: "minus"; size: 34; tip: qsTr("Earlier by %1 ms (Alt+I)").arg(Settings.offsetStep * 1000); onClicked: session.adjustOffset(-Settings.offsetStep) }
+                    IconButton { iconName: "minus"; size: 34; tip: qsTr("Earlier by %1 ms").arg(Math.round(Settings.offsetStep * 1000)) + KeyMap.hint("offsetBack"); onClicked: session.adjustOffset(-Settings.offsetStep) }
                     Text {
                         text: (session.offset >= 0 ? "+" : "") + Math.round(session.offset * 1000) + " ms"
                         color: Theme.text; font.pixelSize: 16; font.features: { "tnum": 1 }
                         Layout.preferredWidth: 90
                         horizontalAlignment: Text.AlignHCenter
                     }
-                    IconButton { iconName: "plus"; size: 34; tip: qsTr("Later by %1 ms (Alt+O)").arg(Settings.offsetStep * 1000); onClicked: session.adjustOffset(Settings.offsetStep) }
+                    IconButton { iconName: "plus"; size: 34; tip: qsTr("Later by %1 ms").arg(Math.round(Settings.offsetStep * 1000)) + KeyMap.hint("offsetForward"); onClicked: session.adjustOffset(Settings.offsetStep) }
                     TButton { small: true; quiet: true; tone: "plain"; text: "−" + Settings.offsetStepBig + " s"; onClicked: session.adjustOffset(-Settings.offsetStepBig) }
                     TButton { small: true; quiet: true; tone: "plain"; text: "+" + Settings.offsetStepBig + " s"; onClicked: session.adjustOffset(Settings.offsetStepBig) }
                 }
                 RowLayout {
                     spacing: 8
                     TButton { small: true; iconName: "target"; text: qsTr("Line starts now"); onClicked: session.lineStartsNow()
-                        ToolTip.visible: hovered; ToolTip.text: qsTr("Press as the next line is spoken (Alt+L)") }
+                        ToolTip.visible: hovered; ToolTip.text: qsTr("Press as the next line is spoken") + KeyMap.hint("lineStartsNow") }
                     TButton { small: true; tone: "blue"; iconName: "sync"; text: qsTr("Sync now"); enabled: session.lineCount > 0; onClicked: session.runSync() }
                     TButton { small: true; quiet: true; tone: "plain"; text: qsTr("Reset"); onClicked: session.setOffset(0) }
                 }

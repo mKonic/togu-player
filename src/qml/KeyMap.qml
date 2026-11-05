@@ -57,6 +57,11 @@ QtObject {
         const a = actions.find(x => x.id === id)
         return a ? a.keys : []
     }
+    // " (A · Left)" for labels and tooltips: the keys an action has now, or "" when it has none.
+    function hint(id) {
+        const k = keysFor(id)
+        return k.length ? " (" + k.join(" · ") + ")" : ""
+    }
     function isDefault(id) { return (Settings.playerKeys || {})[id] === undefined }
     function setKeys(id, keys) {
         const o = Object.assign({}, Settings.playerKeys || {})

@@ -282,11 +282,11 @@ Rectangle {
             }
             Repeater {
                 model: [
-                    { st: "unknown", tip: qsTr("Unknown (U · 1)"), icon: "close" },
-                    { st: "tracked", tip: qsTr("Track (T)"), icon: "paw" },
-                    { st: "learning", tip: qsTr("Learning (2)"), icon: "clock" },
-                    { st: "known", tip: qsTr("Known (K · 3)"), icon: "check" },
-                    { st: "ignored", tip: qsTr("Ignore (I · 4)"), icon: "eyeOff" }
+                    { st: "unknown", tip: qsTr("Unknown") + KeyMap.hint("unknown"), icon: "close" },
+                    { st: "tracked", tip: qsTr("Track") + KeyMap.hint("tracked"), icon: "paw" },
+                    { st: "learning", tip: qsTr("Learning") + KeyMap.hint("learning"), icon: "clock" },
+                    { st: "known", tip: qsTr("Known") + KeyMap.hint("known"), icon: "check" },
+                    { st: "ignored", tip: qsTr("Ignore") + KeyMap.hint("ignored"), icon: "eyeOff" }
                 ]
                 delegate: AbstractButton {
                     id: sb
@@ -315,7 +315,7 @@ Rectangle {
             Rectangle { width: 1; height: 26; color: Theme.line }
             IconButton {
                 iconName: "cardAdd"
-                tip: qsTr("Create card (Q)")
+                tip: qsTr("Create card") + KeyMap.hint("cardWord")
                 size: 38
                 color: Theme.purple
                 onClicked: pop.cardRequested(pop.entry)

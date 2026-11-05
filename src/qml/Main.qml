@@ -13,6 +13,9 @@ ApplicationWindow {
     visible: true
     title: player.visible && player.session.title ? player.session.title + " — Togu" : "Togu"
     color: Theme.bg
+    // Tooltips (Basic style) take these: Togu's raised surface instead of the default light box.
+    palette.toolTipBase: Theme.dark ? "#2b2b60" : "#00005a"
+    palette.toolTipText: "white"
     font.family: Theme.sans
 
     property string page: "watch"
