@@ -78,6 +78,7 @@ const QVariantMap &defaults()
         {"readerTheme", "dark"},
         // Stats
         {"dailyGoalMinutes", 60},
+        {"playerKeys", QVariantMap{}},      // player shortcut overrides, see KeyMap.qml
     };
     return d;
 }

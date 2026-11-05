@@ -643,63 +643,61 @@ FocusScope {
 
     // ---------------------------------------------------------- keys
     Keys.onPressed: event => {
-        const k = event.key, alt = event.modifiers & Qt.AltModifier, shift = event.modifiers & Qt.ShiftModifier
-        const ctrl = event.modifiers & Qt.ControlModifier
         let hit = true
-        if (ctrl) { hit = false }
-        else if (alt) {
-            if (k === Qt.Key_Right || (k === Qt.Key_D && !shift)) mpv.seekRelative(Settings.seekStep)
-            else if (k === Qt.Key_Left || (k === Qt.Key_A && !shift)) mpv.seekRelative(-Settings.seekStep)
-            else if (k === Qt.Key_I) session.adjustOffset(-Settings.offsetStep, shift)
-            else if (k === Qt.Key_O) session.adjustOffset(Settings.offsetStep, shift)
-            else if (k === Qt.Key_L) session.lineStartsNow()
-            else if (k === Qt.Key_Y) session.runSync()
-            else if (k === Qt.Key_Minus) Settings.set("subSize", Math.max(16, Settings.subSize - 2))
-            else if (k === Qt.Key_Equal || k === Qt.Key_Plus) Settings.set("subSize", Math.min(120, Settings.subSize + 2))
-            else if (k === Qt.Key_N) cycleWords(true)
-            else hit = false
-        } else if (shift && (k === Qt.Key_W || k === Qt.Key_Up)) {
+        if (event.key === Qt.Key_Escape) {
+            if (popup.visible) closePopup()
+            else if (page.fullscreen) page.fullscreenToggled()
+            else page.closeRequested()
+            event.accepted = true
+            return
+        }
+        const cur = session.currentIndex >= 0 ? session.currentIndex : session.lastIndex
+        switch (KeyMap.action(event)) {
+        case "pause": mpv.paused = !mpv.paused; break
+        case "prevLine": session.prevLine(); break
+        case "nextLine": session.nextLine(); break
+        case "replayLine": session.replayLine(); break
+        case "seekBack": mpv.seekRelative(-Settings.seekStep); break
+        case "seekForward": mpv.seekRelative(Settings.seekStep); break
+        case "slower": mpv.speed = mpv.speed - Settings.speedStep; break
+        case "faster": mpv.speed = mpv.speed + Settings.speedStep; break
+        case "normalSpeed": mpv.speed = 1.0; break
+        case "frameBack": mpv.frameStep(true); break
+        case "frameForward": mpv.frameStep(false); break
+        case "mute": mpv.muted = !mpv.muted; break
+        case "fullscreen": page.fullscreenToggled(); break
+        case "togglePrimary":
+            primaryHidden = !primaryHidden
+            toasts.show(primaryHidden ? qsTr("Japanese subtitles hidden") : qsTr("Japanese subtitles visible"), "blue"); break
+        case "toggleSecondary":
             secondaryHidden = !secondaryHidden
-            toasts.show(secondaryHidden ? qsTr("Second subtitles hidden") : qsTr("Second subtitles visible"), "blue")
-        } else {
-            switch (k) {
-            case Qt.Key_Space: case Qt.Key_P: mpv.paused = !mpv.paused; break
-            case Qt.Key_A: case Qt.Key_Left: session.prevLine(); break
-            case Qt.Key_D: case Qt.Key_Right: session.nextLine(); break
-            case Qt.Key_S: case Qt.Key_Down: session.replayLine(); break
-            case Qt.Key_W: case Qt.Key_Up:
-                primaryHidden = !primaryHidden
-                toasts.show(primaryHidden ? qsTr("Japanese subtitles hidden") : qsTr("Japanese subtitles visible"), "blue"); break
-            case Qt.Key_R:
-                const anyShown = !primaryHidden || !secondaryHidden
-                primaryHidden = anyShown; secondaryHidden = anyShown
-                toasts.show(anyShown ? qsTr("Subtitles hidden") : qsTr("Subtitles visible"), "blue"); break
-            case Qt.Key_C: Togu.copyText(session.currentText); toasts.show(qsTr("Line copied"), "blue"); break
-            case Qt.Key_G: sidePanel = !sidePanel; break
-            case Qt.Key_B: session.toggleBookmark(session.currentIndex >= 0 ? session.currentIndex : session.lastIndex); break
-            case Qt.Key_N: cycleWords(false); break
-            case Qt.Key_F: page.fullscreenToggled(); break
-            case Qt.Key_M: mpv.muted = !mpv.muted; break
-            case Qt.Key_BracketLeft: mpv.speed = mpv.speed - Settings.speedStep; break
-            case Qt.Key_BracketRight: mpv.speed = mpv.speed + Settings.speedStep; break
-            case Qt.Key_Backspace: mpv.speed = 1.0; break
-            case Qt.Key_Period: mpv.frameStep(false); break
-            case Qt.Key_Comma: mpv.frameStep(true); break
-            case Qt.Key_Escape:
-                if (popup.visible) closePopup()
-                else if (page.fullscreen) page.fullscreenToggled()
-                else page.closeRequested()
-                break
-            case Qt.Key_U: case Qt.Key_1: if (keyTarget()) Togu.setStatus(keyTarget(), "unknown"); break
-            case Qt.Key_T: if (keyTarget()) Togu.setStatus(keyTarget(), Togu.status(keyTarget()) === "tracked" ? "unknown" : "tracked"); break
-            case Qt.Key_2: if (keyTarget()) Togu.setStatus(keyTarget(), "learning"); break
-            case Qt.Key_K: case Qt.Key_3: if (keyTarget()) Togu.setStatus(keyTarget(), "known"); break
-            case Qt.Key_I: case Qt.Key_4: if (keyTarget()) Togu.setStatus(keyTarget(), "ignored"); break
-            case Qt.Key_Q: if (popup.visible) requestCard(popup.entry); break
-            case Qt.Key_E: page.cardRequested(popup.visible ? popup.entry : null, session.line(session.currentIndex >= 0 ? session.currentIndex : session.lastIndex), popup.visible ? popup.tokenSurface : ""); break
-            case Qt.Key_L: session.queueLine(session.currentIndex >= 0 ? session.currentIndex : session.lastIndex, popup.visible ? popup.targetKey : ""); break
-            default: hit = false
-            }
+            toasts.show(secondaryHidden ? qsTr("Second subtitles hidden") : qsTr("Second subtitles visible"), "blue"); break
+        case "toggleAll":
+            const anyShown = !primaryHidden || !secondaryHidden
+            primaryHidden = anyShown; secondaryHidden = anyShown
+            toasts.show(anyShown ? qsTr("Subtitles hidden") : qsTr("Subtitles visible"), "blue"); break
+        case "copyLine": Togu.copyText(session.currentText); toasts.show(qsTr("Line copied"), "blue"); break
+        case "sidePanel": sidePanel = !sidePanel; break
+        case "bookmark": session.toggleBookmark(cur); break
+        case "nextWord": cycleWords(false); break
+        case "prevWord": cycleWords(true); break
+        case "subSmaller": Settings.set("subSize", Math.max(16, Settings.subSize - 2)); break
+        case "subLarger": Settings.set("subSize", Math.min(120, Settings.subSize + 2)); break
+        case "offsetBack": session.adjustOffset(-Settings.offsetStep, false); break
+        case "offsetForward": session.adjustOffset(Settings.offsetStep, false); break
+        case "offset2Back": session.adjustOffset(-Settings.offsetStep, true); break
+        case "offset2Forward": session.adjustOffset(Settings.offsetStep, true); break
+        case "lineStartsNow": session.lineStartsNow(); break
+        case "autoSync": session.runSync(); break
+        case "unknown": if (keyTarget()) Togu.setStatus(keyTarget(), "unknown"); break
+        case "tracked": if (keyTarget()) Togu.setStatus(keyTarget(), Togu.status(keyTarget()) === "tracked" ? "unknown" : "tracked"); break
+        case "learning": if (keyTarget()) Togu.setStatus(keyTarget(), "learning"); break
+        case "known": if (keyTarget()) Togu.setStatus(keyTarget(), "known"); break
+        case "ignored": if (keyTarget()) Togu.setStatus(keyTarget(), "ignored"); break
+        case "cardWord": if (popup.visible) requestCard(popup.entry); break
+        case "cardLine": page.cardRequested(popup.visible ? popup.entry : null, session.line(cur), popup.visible ? popup.tokenSurface : ""); break
+        case "queueLine": session.queueLine(cur, popup.visible ? popup.targetKey : ""); break
+        default: hit = false
         }
         if (hit) { event.accepted = true; poke() }
     }
